@@ -3,10 +3,6 @@
  * Core application logic and business rules
  */
 
-// Example:
-//
-// export function processData(input: string): string {
-//     return input.trim().toLowerCase();
-// }
-
-export {};
+// Geolocation services
+export { GeolocationService, GeolocationError, isGeolocationSupported } from './geolocation';
+export type { LocationResult } from './geolocation';

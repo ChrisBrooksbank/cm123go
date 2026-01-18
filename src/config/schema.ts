@@ -13,7 +13,18 @@ export const ConfigSchema = z.object({
             timeout: z.number().positive().default(5000),
         })
         .optional(),
-    // Add more config sections as needed
+    geolocation: z
+        .object({
+            /** Default timeout for geolocation requests (ms) */
+            timeout: z.number().positive().default(10000),
+            /** Use high accuracy mode by default */
+            enableHighAccuracy: z.boolean().default(true),
+            /** Maximum age of cached position (ms) */
+            maximumAge: z.number().nonnegative().default(60000),
+            /** postcodes.io API base URL */
+            geocodingApiUrl: z.string().url().default('https://api.postcodes.io'),
+        })
+        .default({}),
 });
 
 export type AppConfig = z.infer<typeof ConfigSchema>;
