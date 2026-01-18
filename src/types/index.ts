@@ -63,3 +63,52 @@ export interface GeolocationOptions {
     /** Maximum age of cached position in milliseconds */
     maximumAge?: number;
 }
+
+// --- Bus Stop Types ---
+
+/** NAPTAN bus stop data */
+export const BusStopSchema = z.object({
+    atcoCode: z.string(),
+    commonName: z.string(),
+    indicator: z.string().optional(),
+    bearing: z.string().optional(),
+    coordinates: CoordinatesSchema,
+    street: z.string().optional(),
+    locality: z.string().optional(),
+});
+export type BusStop = z.infer<typeof BusStopSchema>;
+
+/** Bus stop with calculated distance */
+export const NearbyBusStopSchema = BusStopSchema.extend({
+    distanceMeters: z.number(),
+});
+export type NearbyBusStop = z.infer<typeof NearbyBusStopSchema>;
+
+/** Departure information */
+export const DepartureSchema = z.object({
+    line: z.string(),
+    destination: z.string(),
+    expectedDeparture: z.string(),
+    minutesUntil: z.number(),
+    status: z.enum(['on-time', 'delayed', 'cancelled', 'unknown']),
+    operatorName: z.string().optional(),
+});
+export type Departure = z.infer<typeof DepartureSchema>;
+
+/** Departure board response */
+export const DepartureBoardSchema = z.object({
+    stop: NearbyBusStopSchema,
+    departures: z.array(DepartureSchema),
+    lastUpdated: z.number(),
+    isStale: z.boolean(),
+});
+export type DepartureBoard = z.infer<typeof DepartureBoardSchema>;
+
+/** Bus stop error codes */
+export const BusStopErrorCode = {
+    NO_STOPS_FOUND: 1,
+    DEPARTURES_UNAVAILABLE: 2,
+    RATE_LIMITED: 3,
+    API_KEY_MISSING: 4,
+} as const;
+export type BusStopErrorCodeType = (typeof BusStopErrorCode)[keyof typeof BusStopErrorCode];

@@ -21,6 +21,17 @@ export default defineConfig({
                             },
                         },
                     },
+                    {
+                        urlPattern: /^https:\/\/transportapi\.com/i,
+                        handler: 'NetworkFirst',
+                        options: {
+                            cacheName: 'departures-cache',
+                            expiration: {
+                                maxEntries: 20,
+                                maxAgeSeconds: 60, // 1 minute
+                            },
+                        },
+                    },
                 ],
             },
             manifest: {

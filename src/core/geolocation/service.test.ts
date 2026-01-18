@@ -14,6 +14,19 @@ describe('GeolocationService', () => {
                 maximumAge: 60000,
                 geocodingApiUrl: 'https://api.postcodes.io',
             },
+            busStops: {
+                naptanApiUrl: 'https://naptan.api.dft.gov.uk/v1',
+                transportApiUrl: 'https://transportapi.com/v3',
+                stopsCacheTtl: 604800000,
+                departuresCacheTtl: 60000,
+                maxSearchRadius: 1000,
+                chelmsfordBounds: {
+                    north: 51.82,
+                    south: 51.68,
+                    east: 0.55,
+                    west: 0.4,
+                },
+            },
         });
     });
 

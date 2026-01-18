@@ -69,6 +69,97 @@
                 background: #d1fae5;
                 color: #065f46;
             }
+            .distance {
+                color: #6b7280;
+                font-size: 0.875rem;
+                margin-bottom: 1rem;
+            }
+            .departure-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 0.75rem 0;
+                border-bottom: 1px solid #e5e7eb;
+            }
+            .departure-row:last-child {
+                border-bottom: none;
+            }
+            .line-badge {
+                background: #2563eb;
+                color: white;
+                padding: 0.25rem 0.5rem;
+                border-radius: 4px;
+                font-weight: 600;
+                min-width: 3rem;
+                text-align: center;
+                font-size: 0.875rem;
+            }
+            .destination {
+                flex: 1;
+                margin-left: 1rem;
+                font-size: 0.9rem;
+                color: #374151;
+            }
+            .time {
+                font-weight: 600;
+                color: #059669;
+                min-width: 4rem;
+                text-align: right;
+            }
+            .time.delayed {
+                color: #dc2626;
+            }
+            .timestamp {
+                color: #9ca3af;
+                font-size: 0.75rem;
+                margin-top: 0.75rem;
+            }
+            .refresh-button {
+                margin-top: 1rem;
+                padding: 0.5rem 1rem;
+                background: #2563eb;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 0.875rem;
+                font-weight: 500;
+            }
+            .refresh-button:hover {
+                background: #1d4ed8;
+            }
+            .refresh-button:disabled {
+                background: #9ca3af;
+                cursor: not-allowed;
+            }
+            .error-message {
+                color: #dc2626;
+                background: #fef2f2;
+                padding: 1rem;
+                border-radius: 6px;
+            }
+            .no-departures {
+                color: #6b7280;
+                font-style: italic;
+                padding: 1rem 0;
+            }
+            .bearing-badge {
+                display: inline-block;
+                background: #6b7280;
+                color: white;
+                padding: 0.15rem 0.4rem;
+                border-radius: 3px;
+                font-size: 0.7rem;
+                font-weight: 600;
+                margin-left: 0.5rem;
+                vertical-align: middle;
+            }
+            .stop-header {
+                display: flex;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 0.25rem;
+            }
             footer {
                 text-align: center;
                 padding: 1rem;
@@ -85,6 +176,16 @@
             <div class="card">
                 <h2>Your Location</h2>
                 <p id="postcode-display">Detecting your location...</p>
+            </div>
+
+            <div id="departures-container"></div>
+
+            <div id="refresh-container" style="display: none; text-align: center; margin-top: 1rem">
+                <button id="refresh-btn" class="refresh-button">Refresh All</button>
+            </div>
+
+            <div class="card" id="error-card" style="display: none">
+                <p id="error-message" class="error-message"></p>
             </div>
         </main>
         <footer>Built with TypeScript + Vite</footer>

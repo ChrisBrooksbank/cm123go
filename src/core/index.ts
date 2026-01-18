@@ -6,3 +6,7 @@
 // Geolocation services
 export { GeolocationService, GeolocationError, isGeolocationSupported } from './geolocation';
 export type { LocationResult } from './geolocation';
+
+// Bus stop services
+export { BusStopService, BusStopError, BusStopCache } from './bus-stops';
+export type { NearestStopResult } from './bus-stops';
