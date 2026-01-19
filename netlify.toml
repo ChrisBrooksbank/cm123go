@@ -4,6 +4,7 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  SECRETS_SCAN_OMIT_PATHS = "public/app.config.json,dist/app.config.json"
 
 # SPA redirect - all routes to index.html
 [[redirects]]
