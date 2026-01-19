@@ -1,0 +1,7 @@
+{
+    "stopTimes": {},
+    "trips": {},
+    "routes": {},
+    "lastUpdated": "2025-01-19T00:00:00.000Z",
+    "note": "Placeholder file - app uses real-time SIRI-VM data. To add timetable fallback, process GTFS data from BODS."
+}

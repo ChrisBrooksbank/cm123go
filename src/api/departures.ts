@@ -1,38 +1,72 @@
 /**
- * TransportAPI Departures Client
- * Fetches real-time bus departure boards
+ * BODS Departures Client
+ * Fetches bus departure information using Bus Open Data Service
  */
 
-import { z } from 'zod';
 import { Logger } from '@utils/logger';
-import { retryWithBackoff } from '@utils/helpers';
 import { getConfig } from '@config/index';
 import { BusStopError } from '@core/bus-stops/errors';
-import type { Departure } from '@/types';
+import { calculateDepartures } from '@core/bus-stops/eta-calculator';
+import type { Departure, BusStop } from '@/types';
 import { BusStopErrorCode } from '@/types';
 
-// TransportAPI response schema for departures
-const TransportApiDepartureSchema = z.object({
-    line: z.string(),
-    direction: z.string(),
-    aimed_departure_time: z.string().nullable().optional(),
-    expected_departure_time: z.string().nullable().optional(),
-    best_departure_estimate: z.string().nullable().optional(),
-    operator_name: z.string().nullable().optional(),
-});
+/**
+ * Fetch departures for a specific bus stop using BODS data
+ * @param atcoCode - NAPTAN ATCO code for the stop
+ * @param limit - Maximum departures to return (default: 3)
+ * @param stopInfo - Optional stop info if already available (avoids lookup)
+ */
+export async function fetchDepartures(
+    atcoCode: string,
+    limit = 3,
+    stopInfo?: BusStop
+): Promise<Departure[]> {
+    const config = getConfig();
+    const { bodsApiKey } = config.busStops;
 
-const TransportApiResponseSchema = z.object({
-    departures: z
-        .object({
-            all: z.array(TransportApiDepartureSchema).optional(),
-        })
-        .optional(),
-});
+    if (!bodsApiKey) {
+        throw new BusStopError('BODS API key not configured', BusStopErrorCode.API_KEY_MISSING);
+    }
+
+    Logger.debug('Fetching departures via BODS', { atcoCode });
+
+    // If stop info not provided, create a minimal stop object
+    // In practice, the service layer should always provide this
+    const stop: BusStop = stopInfo || {
+        atcoCode,
+        commonName: 'Unknown Stop',
+        coordinates: { latitude: 0, longitude: 0 },
+    };
+
+    try {
+        const departures = await calculateDepartures(stop, limit);
+        Logger.debug(`Found ${departures.length} departures for ${atcoCode}`);
+        return departures;
+    } catch (error) {
+        if (error instanceof BusStopError) {
+            throw error;
+        }
+        Logger.warn('Failed to fetch BODS departures', error);
+        throw new BusStopError(
+            'Failed to fetch departure information',
+            BusStopErrorCode.DEPARTURES_UNAVAILABLE
+        );
+    }
+}
+
+/**
+ * Fetch departures with full stop context
+ * This is the preferred method when stop details are available
+ */
+export async function fetchDeparturesForStop(stop: BusStop, limit = 3): Promise<Departure[]> {
+    return fetchDepartures(stop.atcoCode, limit, stop);
+}
 
 /**
  * Calculate minutes until departure from a time string (HH:MM format)
+ * Exported for backward compatibility with existing code
  */
-function calculateMinutesUntil(timeStr: string): number {
+export function calculateMinutesUntil(timeStr: string): number {
     if (!timeStr || timeStr === 'Due') {
         return 0;
     }
@@ -54,85 +88,4 @@ function calculateMinutesUntil(timeStr: string): number {
 
     const diffMs = departureDate.getTime() - now.getTime();
     return Math.round(diffMs / 60000);
-}
-
-/**
- * Map TransportAPI response to our Departure type
- */
-function mapToDeparture(raw: z.infer<typeof TransportApiDepartureSchema>): Departure {
-    const expectedTime =
-        raw.expected_departure_time ||
-        raw.best_departure_estimate ||
-        raw.aimed_departure_time ||
-        'Unknown';
-
-    const minutesUntil = calculateMinutesUntil(expectedTime || '');
-
-    return {
-        line: raw.line,
-        destination: raw.direction,
-        expectedDeparture: expectedTime || 'Unknown',
-        minutesUntil,
-        status: minutesUntil < 0 ? 'delayed' : 'on-time',
-        operatorName: raw.operator_name || undefined,
-    };
-}
-
-/**
- * Fetch departures for a specific bus stop
- * @param atcoCode - NAPTAN ATCO code for the stop
- * @param limit - Maximum departures to return (default: 3)
- */
-export async function fetchDepartures(atcoCode: string, limit = 3): Promise<Departure[]> {
-    const config = getConfig();
-    const { transportApiUrl, transportApiAppId, transportApiAppKey } = config.busStops;
-
-    if (!transportApiAppId || !transportApiAppKey) {
-        throw new BusStopError(
-            'TransportAPI credentials not configured',
-            BusStopErrorCode.API_KEY_MISSING
-        );
-    }
-
-    const url =
-        `${transportApiUrl}/uk/bus/stop/${atcoCode}/live.json` +
-        `?app_id=${transportApiAppId}&app_key=${transportApiAppKey}` +
-        `&group=no&nextbuses=yes`;
-
-    Logger.debug('Fetching departures', { atcoCode });
-
-    const response = await retryWithBackoff(
-        async () => {
-            const res = await fetch(url);
-
-            if (res.status === 429) {
-                throw new BusStopError(
-                    'Rate limited by TransportAPI',
-                    BusStopErrorCode.RATE_LIMITED
-                );
-            }
-
-            if (!res.ok) {
-                throw new BusStopError(
-                    `TransportAPI error: ${res.status}`,
-                    BusStopErrorCode.DEPARTURES_UNAVAILABLE
-                );
-            }
-
-            return res.json();
-        },
-        2,
-        1000
-    );
-
-    const parseResult = TransportApiResponseSchema.safeParse(response);
-
-    if (!parseResult.success) {
-        Logger.warn('Invalid TransportAPI response', parseResult.error);
-        return [];
-    }
-
-    const departures = parseResult.data.departures?.all ?? [];
-
-    return departures.slice(0, limit).map(mapToDeparture);
 }

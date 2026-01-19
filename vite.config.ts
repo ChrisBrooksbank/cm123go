@@ -22,13 +22,13 @@ export default defineConfig({
                         },
                     },
                     {
-                        urlPattern: /^https:\/\/transportapi\.com/i,
+                        urlPattern: /^https:\/\/data\.bus-data\.dft\.gov\.uk/i,
                         handler: 'NetworkFirst',
                         options: {
-                            cacheName: 'departures-cache',
+                            cacheName: 'bods-cache',
                             expiration: {
-                                maxEntries: 20,
-                                maxAgeSeconds: 60, // 1 minute
+                                maxEntries: 50,
+                                maxAgeSeconds: 60, // 1 minute for real-time data
                             },
                         },
                     },

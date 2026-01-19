@@ -29,18 +29,20 @@ export const ConfigSchema = z.object({
         .object({
             /** NAPTAN API base URL */
             naptanApiUrl: z.string().url().default('https://naptan.api.dft.gov.uk/v1'),
-            /** TransportAPI base URL */
-            transportApiUrl: z.string().url().default('https://transportapi.com/v3'),
-            /** TransportAPI app ID */
-            transportApiAppId: z.string().optional(),
-            /** TransportAPI app key */
-            transportApiAppKey: z.string().optional(),
+            /** BODS API base URL */
+            bodsApiUrl: z.string().url().default('https://data.bus-data.dft.gov.uk/api/v1'),
+            /** BODS API key */
+            bodsApiKey: z.string().optional(),
             /** Cache TTL for stops in milliseconds (default: 7 days) */
             stopsCacheTtl: z.number().positive().default(604800000),
             /** Cache TTL for departures in milliseconds (default: 60s) */
             departuresCacheTtl: z.number().positive().default(60000),
+            /** Cache TTL for GTFS timetable in milliseconds (default: 1 day) */
+            timetableCacheTtl: z.number().positive().default(86400000),
             /** Maximum distance to search for stops (meters) */
             maxSearchRadius: z.number().positive().default(1000),
+            /** Radius for SIRI-VM vehicle search (meters) */
+            vehicleSearchRadius: z.number().positive().default(2000),
             /** Chelmsford bounding box for filtering stops */
             chelmsfordBounds: z
                 .object({

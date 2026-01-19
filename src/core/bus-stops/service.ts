@@ -9,7 +9,7 @@ import { GeolocationService } from '@core/geolocation';
 import { BusStopCache } from './cache';
 import { BusStopError } from './errors';
 import { fetchChelmsfordBusStops } from '@api/naptan';
-import { fetchDepartures } from '@api/departures';
+import { fetchDeparturesForStop } from '@api/departures';
 import type { Coordinates, NearbyBusStop, DepartureBoard } from '@/types';
 import { BusStopErrorCode } from '@/types';
 
@@ -146,8 +146,8 @@ export const BusStopService = {
                 };
             }
 
-            // Fetch fresh departures
-            const departures = await fetchDepartures(nearest.atcoCode, 3);
+            // Fetch fresh departures using BODS
+            const departures = await fetchDeparturesForStop(nearest, 3);
             await BusStopCache.setDepartures(nearest.atcoCode, departures);
 
             return {
@@ -182,8 +182,8 @@ export const BusStopService = {
         try {
             const [nearest] = await this.findNearest(location, 1);
 
-            // Skip cache, fetch fresh
-            const departures = await fetchDepartures(nearest.atcoCode, 3);
+            // Skip cache, fetch fresh from BODS
+            const departures = await fetchDeparturesForStop(nearest, 3);
             await BusStopCache.setDepartures(nearest.atcoCode, departures);
 
             return {
@@ -279,8 +279,8 @@ export const BusStopService = {
             };
         }
 
-        // Fetch fresh
-        const departures = await fetchDepartures(stop.atcoCode, 3);
+        // Fetch fresh from BODS
+        const departures = await fetchDeparturesForStop(stop, 3);
         await BusStopCache.setDepartures(stop.atcoCode, departures);
 
         return {
@@ -321,10 +321,10 @@ export const BusStopService = {
             // Take up to 2 from each direction
             const stopsToShow = [...primaryStops.slice(0, 2), ...oppositeStops.slice(0, 2)];
 
-            // Fetch fresh departures for all stops
+            // Fetch fresh departures from BODS for all stops
             const boards: DepartureBoard[] = [];
             for (const stop of stopsToShow) {
-                const departures = await fetchDepartures(stop.atcoCode, 3);
+                const departures = await fetchDeparturesForStop(stop, 3);
                 await BusStopCache.setDepartures(stop.atcoCode, departures);
                 boards.push({
                     stop,

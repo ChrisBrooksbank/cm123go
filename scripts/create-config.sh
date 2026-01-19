@@ -4,8 +4,7 @@
 cat > public/app.config.json << EOF
 {
   "busStops": {
-    "transportApiAppId": "${TRANSPORT_API_APP_ID}",
-    "transportApiAppKey": "${TRANSPORT_API_KEY}"
+    "bodsApiKey": "${BODS_API_KEY}"
   }
 }
 EOF
