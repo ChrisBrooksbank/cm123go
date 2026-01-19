@@ -143,8 +143,10 @@ async function getRealTimeOnlyDepartures(
     stopCoords: Coordinates,
     limit: number
 ): Promise<Departure[]> {
+    Logger.info('Fetching real-time only departures', { stopCoords });
     try {
         const vehicles = await fetchVehiclesNear(stopCoords);
+        Logger.info('Fetched vehicles from SIRI-VM', { count: vehicles.length });
         const departures: Departure[] = [];
 
         // Group vehicles by line and get nearest one for each line

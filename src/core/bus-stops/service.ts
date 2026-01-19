@@ -210,9 +210,11 @@ export const BusStopService = {
      * Returns 2 stops per direction (4 total) - nearest and next nearest for each
      */
     async getBothDirections(location: Coordinates): Promise<BothDirectionsResult> {
+        Logger.info('Getting departures for both directions', { location });
         try {
             // Get many nearby stops to find multiple in each direction
             const nearbyStops = await this.findNearest(location, 50);
+            Logger.info('Found nearby stops', { count: nearbyStops.length });
 
             if (nearbyStops.length === 0) {
                 throw new BusStopError(
@@ -268,9 +270,18 @@ export const BusStopService = {
      * Helper to get departures for a single stop
      */
     async getDeparturesForStop(stop: NearbyBusStop): Promise<DepartureBoard> {
+        Logger.debug('Getting departures for stop', {
+            atcoCode: stop.atcoCode,
+            name: stop.commonName,
+        });
+
         // Try cache first
         const cached = await BusStopCache.getDepartures(stop.atcoCode);
         if (cached && cached.length > 0) {
+            Logger.debug('Using cached departures', {
+                atcoCode: stop.atcoCode,
+                count: cached.length,
+            });
             return {
                 stop,
                 departures: cached,
@@ -280,15 +291,30 @@ export const BusStopService = {
         }
 
         // Fetch fresh from BODS
-        const departures = await fetchDeparturesForStop(stop, 3);
-        await BusStopCache.setDepartures(stop.atcoCode, departures);
+        try {
+            Logger.debug('Fetching fresh departures from BODS', { atcoCode: stop.atcoCode });
+            const departures = await fetchDeparturesForStop(stop, 3);
+            Logger.debug('Fetched departures', {
+                atcoCode: stop.atcoCode,
+                count: departures.length,
+            });
+            await BusStopCache.setDepartures(stop.atcoCode, departures);
 
-        return {
-            stop,
-            departures,
-            lastUpdated: Date.now(),
-            isStale: false,
-        };
+            return {
+                stop,
+                departures,
+                lastUpdated: Date.now(),
+                isStale: false,
+            };
+        } catch (error) {
+            Logger.warn('Failed to fetch departures for stop', { atcoCode: stop.atcoCode, error });
+            return {
+                stop,
+                departures: [],
+                lastUpdated: Date.now(),
+                isStale: false,
+            };
+        }
     },
 
     /**

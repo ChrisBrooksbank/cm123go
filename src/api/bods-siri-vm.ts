@@ -116,7 +116,10 @@ export async function fetchVehiclePositions(boundingBox: BoundingBox): Promise<V
     const bbox = `${boundingBox.minLatitude},${boundingBox.minLongitude},${boundingBox.maxLatitude},${boundingBox.maxLongitude}`;
     const url = `/api/bods/datafeed/?boundingBox=${bbox}&api_key=${bodsApiKey}`;
 
-    Logger.debug('Fetching SIRI-VM vehicle positions', { boundingBox });
+    Logger.info('Fetching SIRI-VM vehicle positions', {
+        bbox,
+        url: url.replace(/api_key=.*/, 'api_key=***'),
+    });
 
     const response = await retryWithBackoff(
         async () => {

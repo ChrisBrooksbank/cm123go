@@ -40,7 +40,7 @@ export const ConfigSchema = z.object({
             /** Maximum distance to search for stops (meters) */
             maxSearchRadius: z.number().positive().default(1000),
             /** Radius for SIRI-VM vehicle search (meters) */
-            vehicleSearchRadius: z.number().positive().default(2000),
+            vehicleSearchRadius: z.number().positive().default(10000),
             /** Chelmsford bounding box for filtering stops */
             chelmsfordBounds: z
                 .object({

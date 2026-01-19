@@ -101,14 +101,34 @@
                 font-size: 0.9rem;
                 color: #374151;
             }
+            .time-container {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
             .time {
                 font-weight: 600;
                 color: #059669;
-                min-width: 4rem;
+                min-width: 3.5rem;
                 text-align: right;
             }
             .time.delayed {
                 color: #dc2626;
+            }
+            .source-badge {
+                font-size: 0.65rem;
+                font-weight: 600;
+                padding: 0.15rem 0.35rem;
+                border-radius: 3px;
+                text-transform: uppercase;
+            }
+            .source-badge.realtime {
+                background: #dcfce7;
+                color: #166534;
+            }
+            .source-badge.scheduled {
+                background: #e0e7ff;
+                color: #3730a3;
             }
             .timestamp {
                 color: #9ca3af;

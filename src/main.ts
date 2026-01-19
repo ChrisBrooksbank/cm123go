@@ -32,12 +32,18 @@ function getBearingLabel(bearing: string | undefined): string {
 function renderDeparture(departure: Departure): string {
     const timeClass = departure.status === 'delayed' ? 'time delayed' : 'time';
     const timeDisplay = departure.minutesUntil <= 0 ? 'Due' : `${departure.minutesUntil} min`;
+    const sourceIndicator = departure.isRealTime
+        ? '<span class="source-badge realtime">Live</span>'
+        : '<span class="source-badge scheduled">Sched</span>';
 
     return `
         <div class="departure-row">
             <span class="line-badge">${departure.line}</span>
             <span class="destination">${departure.destination}</span>
-            <span class="${timeClass}">${timeDisplay}</span>
+            <span class="time-container">
+                ${sourceIndicator}
+                <span class="${timeClass}">${timeDisplay}</span>
+            </span>
         </div>
     `;
 }

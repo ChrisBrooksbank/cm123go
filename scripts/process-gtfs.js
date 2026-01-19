@@ -28,9 +28,11 @@ const CHELMSFORD_BOUNDS = {
     west: 0.4,
 };
 
-// BODS GTFS download URL - national dataset (very large ~1.2GB)
-// For production, consider using operator-specific datasets
-const BODS_GTFS_URL = 'https://data.bus-data.dft.gov.uk/timetable/download/gtfs-file/all/';
+// BODS GTFS download URL
+// Can filter by operator NOC code to get smaller dataset
+// First Essex = FESX, Arriva = ARBB, etc.
+const OPERATOR_NOCS = process.env.OPERATOR_NOCS || 'FESX'; // First Essex by default
+const BODS_GTFS_URL = `https://data.bus-data.dft.gov.uk/timetable/download/gtfs-file/all/?noc=${OPERATOR_NOCS}`;
 
 // Output file
 const OUTPUT_FILE = path.join(__dirname, '..', 'public', 'gtfs-chelmsford.json');
