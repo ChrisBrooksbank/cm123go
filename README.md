@@ -39,6 +39,36 @@ src/
 └── types/           # Shared type definitions
 ```
 
+## Architecture
+
+### How It Works
+
+1. App loads config and gets user location via browser Geolocation API
+2. Reverse geocodes location to display UK postcode (via postcodes.io)
+3. Finds nearest bus stops in both directions (up to 4 stops)
+4. Fetches real-time departures with fallback chain:
+    - **First Bus API** - real-time for First Essex buses (primary)
+    - **BODS SIRI-VM + GTFS** - vehicle positions + timetables (fallback)
+    - **GTFS scheduled times** - static timetables (last resort)
+
+### External APIs
+
+| API          | Purpose                      |
+| ------------ | ---------------------------- |
+| First Bus    | Real-time departure times    |
+| BODS SIRI-VM | Real-time vehicle positions  |
+| BODS GTFS    | Static timetable data        |
+| NAPTAN       | Bus stop data (pre-bundled)  |
+| postcodes.io | Geocoding (free, no API key) |
+
+### Caching
+
+Uses IndexedDB for offline-first experience:
+
+- Bus stops: 7 days
+- Departures: 60 seconds
+- Timetables: 1 day
+
 ## PWA Support
 
 This app is configured as a Progressive Web App. To complete PWA setup:

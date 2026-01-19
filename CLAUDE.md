@@ -21,9 +21,42 @@ npm run format         # Prettier format all files
 npm run typecheck      # TypeScript type check
 npm run knip           # Find unused code
 npm run check          # Run all checks
+
+# Run a single test file
+npm test -- src/path/to/file.test.ts
 ```
 
 ## Architecture
+
+### Data Flow
+
+App initialization (`main.ts`):
+
+1. Load config → Get user location → Reverse geocode to postcode
+2. Find nearest bus stops (up to 4, both directions)
+3. Fetch departures in parallel with fallback chain
+
+**Departure data sources** (in priority order):
+
+1. First Bus API - real-time for First Essex buses
+2. BODS SIRI-VM + GTFS - real-time vehicle positions + static timetables
+3. GTFS scheduled times only
+
+**Caching** (IndexedDB):
+
+- Bus stops: 7 days TTL
+- Departures: 60 seconds TTL
+- GTFS timetables: 1 day TTL
+
+### External APIs
+
+| API          | Purpose                     | Module                    |
+| ------------ | --------------------------- | ------------------------- |
+| First Bus    | Real-time departures        | `src/api/first-bus.ts`    |
+| BODS SIRI-VM | Vehicle positions           | `src/api/bods-siri-vm.ts` |
+| BODS GTFS    | Static timetables           | `src/api/bods-gtfs.ts`    |
+| NAPTAN       | Bus stop data (pre-bundled) | `src/api/naptan.ts`       |
+| postcodes.io | Geocoding (no API key)      | `src/api/geocoding.ts`    |
 
 ### TypeScript with ES Modules
 
@@ -82,6 +115,22 @@ const throttledUpdate = throttle(update, 1000);
 // Manage intervals with automatic cleanup
 const intervalId = IntervalManager.register(() => poll(), 5000);
 IntervalManager.clear(intervalId); // Or clearAll() on shutdown
+```
+
+### Error Handling Pattern
+
+Use discriminated union result types for type-safe error handling:
+
+```typescript
+type Result<T> = { success: true; data: T } | { success: false; error: string };
+
+// Usage
+const result = await fetchData();
+if (result.success) {
+    // result.data is typed
+} else {
+    // result.error is typed
+}
 ```
 
 ### PWA Configuration
