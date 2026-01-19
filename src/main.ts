@@ -446,8 +446,12 @@ async function fetchAndDisplayDepartures(location: Coordinates): Promise<void> {
     // Get train stations first so we can reference them for error cases
     const trainStations = TrainStationService.getStationsByDistance(location);
 
-    // Fetch bus and train data in parallel
-    const [busResult, trainResults] = await Promise.all([
+    // Get favorite ATCO codes to fetch them regardless of distance
+    const favoriteAtcoCodes = Array.from(FavoritesManager.getAtcoCodes());
+
+    // Fetch favorite stops, nearby bus stops, and train data in parallel
+    const [favoriteStops, busResult, trainResults] = await Promise.all([
+        BusStopService.getByAtcoCodes(favoriteAtcoCodes, location),
         BusStopService.getBothDirections(location),
         TrainDepartureService.getDeparturesForAllStations(trainStations),
     ]);
@@ -473,20 +477,42 @@ async function fetchAndDisplayDepartures(location: Coordinates): Promise<void> {
         };
     });
 
+    // Fetch departures for favorite stops that aren't already in nearby results
+    const nearbyAtcoCodes = new Set(
+        busResult.success ? busResult.boards.map(b => b.stop.atcoCode) : []
+    );
+    const favoritesNotNearby = favoriteStops.filter(stop => !nearbyAtcoCodes.has(stop.atcoCode));
+
+    // Fetch departures for distant favorites
+    const favoriteBoards: DepartureBoard[] = [];
+    if (favoritesNotNearby.length > 0) {
+        const favResults = await Promise.allSettled(
+            favoritesNotNearby.map(stop => BusStopService.getDeparturesForStop(stop))
+        );
+        for (const result of favResults) {
+            if (result.status === 'fulfilled') {
+                favoriteBoards.push(result.value);
+            }
+        }
+    }
+
     if (!busResult.success) {
-        // Still show train departures even if bus data fails
-        if (trainItems.length > 0) {
-            displayItems(trainItems, false);
+        // Still show favorites and train departures even if nearby bus data fails
+        const favItems: DisplayItem[] = favoriteBoards.map(b => ({ type: 'bus', data: b }));
+        if (favItems.length > 0 || trainItems.length > 0) {
+            displayItems([...favItems, ...trainItems], false);
         } else {
             displayError(busResult.error.getUserMessage());
         }
         return;
     }
 
-    // Combine bus and train items
-    const busItems: DisplayItem[] = busResult.boards.map(b => ({ type: 'bus', data: b }));
+    // Combine favorite bus items (distant ones) with nearby bus items
+    const favBusItems: DisplayItem[] = favoriteBoards.map(b => ({ type: 'bus', data: b }));
+    const nearbyBusItems: DisplayItem[] = busResult.boards.map(b => ({ type: 'bus', data: b }));
+
     // Show "show more" button since there are likely more stops nearby
-    displayItems([...busItems, ...trainItems], true);
+    displayItems([...favBusItems, ...nearbyBusItems, ...trainItems], true);
 }
 
 /**
@@ -508,8 +534,12 @@ async function handleRefresh(): Promise<void> {
         // Get train stations first so we can reference them for error cases
         const trainStations = TrainStationService.getStationsByDistance(userLocation);
 
-        // Refresh bus and train data in parallel
-        const [busResult, trainResults] = await Promise.all([
+        // Get favorite ATCO codes to refresh them regardless of distance
+        const favoriteAtcoCodes = Array.from(FavoritesManager.getAtcoCodes());
+
+        // Fetch favorite stops, refresh nearby bus stops, and train data in parallel
+        const [favoriteStops, busResult, trainResults] = await Promise.all([
+            BusStopService.getByAtcoCodes(favoriteAtcoCodes, userLocation),
             BusStopService.refreshBothDirections(userLocation),
             TrainDepartureService.refreshDeparturesForAllStations(trainStations),
         ]);
@@ -535,13 +565,42 @@ async function handleRefresh(): Promise<void> {
             };
         });
 
+        // Refresh departures for favorite stops that aren't already in nearby results
+        const nearbyAtcoCodes = new Set(
+            busResult.success ? busResult.boards.map(b => b.stop.atcoCode) : []
+        );
+        const favoritesNotNearby = favoriteStops.filter(
+            stop => !nearbyAtcoCodes.has(stop.atcoCode)
+        );
+
+        // Refresh departures for distant favorites
+        const favoriteBoards: DepartureBoard[] = [];
+        if (favoritesNotNearby.length > 0) {
+            const favResults = await Promise.allSettled(
+                favoritesNotNearby.map(stop => BusStopService.refreshDeparturesForStop(stop))
+            );
+            for (const result of favResults) {
+                if (result.status === 'fulfilled') {
+                    favoriteBoards.push(result.value);
+                }
+            }
+        }
+
         if (busResult.success) {
-            const busItems: DisplayItem[] = busResult.boards.map(b => ({ type: 'bus', data: b }));
-            displayItems([...busItems, ...trainItems], true);
-        } else if (trainItems.length > 0) {
-            displayItems(trainItems, false);
+            const favBusItems: DisplayItem[] = favoriteBoards.map(b => ({ type: 'bus', data: b }));
+            const nearbyBusItems: DisplayItem[] = busResult.boards.map(b => ({
+                type: 'bus',
+                data: b,
+            }));
+            displayItems([...favBusItems, ...nearbyBusItems, ...trainItems], true);
         } else {
-            displayError(busResult.error.getUserMessage());
+            // Still show favorites and train departures even if nearby bus data fails
+            const favItems: DisplayItem[] = favoriteBoards.map(b => ({ type: 'bus', data: b }));
+            if (favItems.length > 0 || trainItems.length > 0) {
+                displayItems([...favItems, ...trainItems], false);
+            } else {
+                displayError(busResult.error.getUserMessage());
+            }
         }
     } finally {
         if (refreshBtn) {

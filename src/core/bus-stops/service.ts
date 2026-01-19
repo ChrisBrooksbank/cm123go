@@ -157,6 +157,27 @@ export const BusStopService = {
     },
 
     /**
+     * Get stops by their ATCO codes (for favorites)
+     * @param atcoCodes - Array of ATCO codes to look up
+     * @param location - User's current coordinates (for distance calculation)
+     * @returns Array of stops with distances (regardless of search radius)
+     */
+    async getByAtcoCodes(atcoCodes: string[], location: Coordinates): Promise<NearbyBusStop[]> {
+        if (atcoCodes.length === 0) return [];
+
+        const stops = await BusStopCache.getStops();
+        if (!stops || stops.length === 0) return [];
+
+        const atcoSet = new Set(atcoCodes);
+        return stops
+            .filter(stop => atcoSet.has(stop.atcoCode))
+            .map(stop => ({
+                ...stop,
+                distanceMeters: GeolocationService.calculateDistance(location, stop.coordinates),
+            }));
+    },
+
+    /**
      * Get nearest stop with departures
      * Main entry point for the feature
      *
@@ -385,6 +406,33 @@ export const BusStopService = {
             };
         } catch (error) {
             Logger.warn('Failed to fetch departures for stop', { atcoCode: stop.atcoCode, error });
+            return {
+                stop,
+                departures: [],
+                lastUpdated: Date.now(),
+                isStale: false,
+            };
+        }
+    },
+
+    /**
+     * Refresh departures for a single stop (bypasses cache, fetches fresh)
+     */
+    async refreshDeparturesForStop(stop: NearbyBusStop): Promise<DepartureBoard> {
+        try {
+            const departures = await fetchDeparturesForStop(stop, 3);
+            await BusStopCache.setDepartures(stop.atcoCode, departures);
+            return {
+                stop,
+                departures,
+                lastUpdated: Date.now(),
+                isStale: false,
+            };
+        } catch (error) {
+            Logger.warn('Failed to refresh departures for stop', {
+                atcoCode: stop.atcoCode,
+                error,
+            });
             return {
                 stop,
                 departures: [],
