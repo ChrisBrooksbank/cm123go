@@ -20,6 +20,8 @@ describe('geocoding', () => {
                 departuresCacheTtl: 60000,
                 timetableCacheTtl: 86400000,
                 maxSearchRadius: 1000,
+                maxExpandedRadius: 3000,
+                radiusIncrement: 500,
                 vehicleSearchRadius: 2000,
                 chelmsfordBounds: {
                     north: 51.82,

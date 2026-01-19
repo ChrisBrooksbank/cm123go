@@ -39,6 +39,10 @@ export const ConfigSchema = z.object({
             timetableCacheTtl: z.number().positive().default(86400000),
             /** Maximum distance to search for stops (meters) */
             maxSearchRadius: z.number().positive().default(1000),
+            /** Maximum radius for expanded search (meters) */
+            maxExpandedRadius: z.number().positive().default(3000),
+            /** Radius increment per expansion (meters) */
+            radiusIncrement: z.number().positive().default(500),
             /** Radius for SIRI-VM vehicle search (meters) */
             vehicleSearchRadius: z.number().positive().default(10000),
             /** Chelmsford bounding box for filtering stops */

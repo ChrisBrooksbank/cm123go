@@ -115,9 +115,14 @@ export const BusStopService = {
      * Find nearest bus stops to given coordinates
      * @param location - User's current coordinates
      * @param maxResults - Maximum number of stops to return (default: 1)
+     * @param customRadius - Optional custom search radius in meters (overrides config)
      * @returns Array of nearby bus stops sorted by distance
      */
-    async findNearest(location: Coordinates, maxResults = 1): Promise<NearbyBusStop[]> {
+    async findNearest(
+        location: Coordinates,
+        maxResults = 1,
+        customRadius?: number
+    ): Promise<NearbyBusStop[]> {
         const stops = await BusStopCache.getStops();
 
         if (!stops || stops.length === 0) {
@@ -128,7 +133,7 @@ export const BusStopService = {
         }
 
         const config = getConfig();
-        const maxRadius = config.busStops.maxSearchRadius;
+        const maxRadius = customRadius ?? config.busStops.maxSearchRadius;
 
         // Calculate distances and filter by radius
         const nearby: NearbyBusStop[] = stops
@@ -444,17 +449,40 @@ export const BusStopService = {
 
     /**
      * Get expanded list of stops (for "Show more" feature)
-     * Returns stops not already displayed, up to maxResults
+     * Returns stops not already displayed, with progressive radius expansion
+     * @param location - User's current coordinates
+     * @param excludeAtcoCodes - ATCO codes to exclude (already displayed)
+     * @param currentRadius - Current search radius (will expand from here)
+     * @param maxResults - Maximum number of stops to return (default: 6)
+     * @returns Object with stops and the actual radius used
      */
     async getExpandedStops(
         location: Coordinates,
         excludeAtcoCodes: string[],
+        currentRadius: number,
         maxResults = 6
-    ): Promise<NearbyBusStop[]> {
-        const nearbyStops = await this.findNearest(location, 100);
+    ): Promise<{ stops: NearbyBusStop[]; actualRadius: number }> {
+        const config = getConfig();
         const excludeSet = new Set(excludeAtcoCodes);
+        let searchRadius = currentRadius + config.busStops.radiusIncrement;
 
-        return nearbyStops.filter(stop => !excludeSet.has(stop.atcoCode)).slice(0, maxResults);
+        // Try progressively larger radii until we find stops or hit max
+        while (searchRadius <= config.busStops.maxExpandedRadius) {
+            const nearbyStops = await this.findNearest(location, 100, searchRadius);
+            const newStops = nearbyStops
+                .filter(stop => !excludeSet.has(stop.atcoCode))
+                .slice(0, maxResults);
+
+            if (newStops.length > 0) {
+                return { stops: newStops, actualRadius: searchRadius };
+            }
+
+            // No new stops at this radius, try next level
+            searchRadius += config.busStops.radiusIncrement;
+        }
+
+        // Reached max radius with no new stops
+        return { stops: [], actualRadius: config.busStops.maxExpandedRadius };
     },
 
     /**

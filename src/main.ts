@@ -1,4 +1,4 @@
-import { loadConfig } from '@/config';
+import { loadConfig, getConfig } from '@/config';
 import { Logger } from '@/utils/logger';
 import {
     GeolocationService,
@@ -21,8 +21,9 @@ import type {
 // Store user location for refresh
 let userLocation: Coordinates | null = null;
 
-// State for show more stops feature
-let expandedStopsShown = false;
+// State for progressive radius expansion feature
+let currentSearchRadius = 1000; // Initial radius, will be set from config on load
+let hasReachedMaxRadius = false;
 let displayedAtcoCodes: string[] = [];
 let allDisplayItems: DisplayItem[] = [];
 
@@ -184,10 +185,15 @@ function displayItems(items: DisplayItem[], hasMoreStops = false): void {
     let html = sorted.map(renderDisplayItem).join('');
 
     // Add "Show more stops" button if applicable
-    if (hasMoreStops && !expandedStopsShown) {
+    if (hasMoreStops && !hasReachedMaxRadius) {
+        const config = getConfig();
+        const nextRadius = currentSearchRadius + config.busStops.radiusIncrement;
+        const displayRadius =
+            nextRadius >= 1000 ? `${(nextRadius / 1000).toFixed(1)}km` : `${nextRadius}m`;
+
         html += `
             <div id="show-more-container" class="show-more-container">
-                <button id="show-more-btn" class="show-more-btn">Show more stops nearby</button>
+                <button id="show-more-btn" class="show-more-btn">Show more stops (within ${displayRadius})</button>
             </div>
         `;
     }
@@ -271,7 +277,7 @@ function handleFavoriteClick(e: Event): void {
     btn.textContent = isNowFavorite ? 'Favorited' : 'Favorite';
 
     // Re-render to reorder (favorites at top)
-    displayItems(allDisplayItems, !expandedStopsShown);
+    displayItems(allDisplayItems, !hasReachedMaxRadius);
 }
 
 /**
@@ -285,34 +291,51 @@ function setupShowMoreHandler(): void {
 }
 
 /**
- * Handle "Show more stops" button click
+ * Handle "Show more stops" button click - progressive radius expansion
  */
 async function handleShowMore(): Promise<void> {
-    if (!userLocation || expandedStopsShown) return;
+    if (!userLocation || hasReachedMaxRadius) return;
 
     const btn = document.getElementById('show-more-btn') as HTMLButtonElement;
     if (btn) {
-        btn.textContent = 'Loading...';
+        btn.textContent = 'Searching...';
         btn.disabled = true;
     }
 
+    const config = getConfig();
+
     try {
-        // Get additional stops (excluding already displayed)
-        const additionalStops = await BusStopService.getExpandedStops(
+        // Get additional stops at expanded radius
+        const result = await BusStopService.getExpandedStops(
             userLocation,
-            displayedAtcoCodes
+            displayedAtcoCodes,
+            currentSearchRadius
         );
 
-        if (additionalStops.length === 0) {
-            // No more stops to show
-            const container = document.getElementById('show-more-container');
-            if (container) container.remove();
+        // Update current radius
+        currentSearchRadius = result.actualRadius;
+
+        // Check if we've reached max radius
+        if (currentSearchRadius >= config.busStops.maxExpandedRadius) {
+            hasReachedMaxRadius = true;
+        }
+
+        if (result.stops.length === 0) {
+            // No new stops found
+            if (hasReachedMaxRadius) {
+                // Remove button - no more stops possible
+                const container = document.getElementById('show-more-container');
+                if (container) container.remove();
+            } else {
+                // Update button for next expansion
+                displayItems(allDisplayItems, true);
+            }
             return;
         }
 
         // Fetch departures for additional stops
         const additionalBoards = await Promise.all(
-            additionalStops.map(stop => BusStopService.getDeparturesForStop(stop))
+            result.stops.map(stop => BusStopService.getDeparturesForStop(stop))
         );
 
         // Add to display items
@@ -320,17 +343,25 @@ async function handleShowMore(): Promise<void> {
             .filter(b => b.departures.length > 0)
             .map(b => ({ type: 'bus' as const, data: b }));
 
+        // Update displayed ATCO codes
+        displayedAtcoCodes = [...displayedAtcoCodes, ...result.stops.map(s => s.atcoCode)];
+
         allDisplayItems = [...allDisplayItems, ...newItems];
-        expandedStopsShown = true;
 
-        // Re-render all items
-        displayItems(allDisplayItems, false);
+        // Re-render (button shows if not at max radius)
+        displayItems(allDisplayItems, !hasReachedMaxRadius);
 
-        Logger.debug('Expanded stops loaded', { count: newItems.length });
+        Logger.debug('Expanded stops loaded', {
+            count: newItems.length,
+            radius: currentSearchRadius,
+        });
     } catch (error) {
         Logger.error('Failed to load more stops', String(error));
         if (btn) {
-            btn.textContent = 'Show more stops nearby';
+            const nextRadius = currentSearchRadius + config.busStops.radiusIncrement;
+            const displayRadius =
+                nextRadius >= 1000 ? `${(nextRadius / 1000).toFixed(1)}km` : `${nextRadius}m`;
+            btn.textContent = `Show more stops (within ${displayRadius})`;
             btn.disabled = false;
         }
     }
@@ -521,8 +552,10 @@ async function fetchAndDisplayDepartures(location: Coordinates): Promise<void> {
 async function handleRefresh(): Promise<void> {
     if (!userLocation) return;
 
-    // Reset expanded state on refresh
-    expandedStopsShown = false;
+    // Reset progressive expansion state on refresh
+    const config = getConfig();
+    currentSearchRadius = config.busStops.maxSearchRadius;
+    hasReachedMaxRadius = false;
 
     const refreshBtn = document.getElementById('refresh-btn') as HTMLButtonElement;
     if (refreshBtn) {
@@ -618,6 +651,9 @@ async function init() {
         const config = await loadConfig();
         Logger.setDebugMode(config.debug);
         Logger.success('Configuration loaded');
+
+        // Initialize progressive expansion state from config
+        currentSearchRadius = config.busStops.maxSearchRadius;
 
         const postcodeDisplay = document.getElementById('postcode-display');
         if (!postcodeDisplay) return;
