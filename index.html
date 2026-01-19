@@ -289,13 +289,28 @@
                 text-decoration: line-through;
             }
             .directions-link {
-                margin-left: 0.75rem;
+                display: inline-flex;
+                align-items: center;
+                gap: 0.25rem;
+                margin-left: 0.5rem;
+                padding: 0.5rem 0.75rem;
+                min-height: 44px;
+                min-width: 44px;
+                background: #eff6ff;
                 color: #2563eb;
                 text-decoration: none;
-                font-size: 1.1rem;
+                font-size: 0.875rem;
+                font-weight: 500;
+                border-radius: 6px;
+                border: 1px solid #bfdbfe;
+                vertical-align: middle;
             }
             .directions-link:hover {
-                text-decoration: underline;
+                background: #dbeafe;
+                border-color: #93c5fd;
+            }
+            .directions-link:active {
+                background: #bfdbfe;
             }
             footer {
                 text-align: center;

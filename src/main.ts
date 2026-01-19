@@ -129,7 +129,7 @@ function renderDepartureCard(board: DepartureBoard): string {
                 <h2>${board.stop.commonName}${indicator}</h2>
                 ${bearingBadge}
             </div>
-            <p class="distance">${Math.round(board.stop.distanceMeters)}m away <a href="${directionsUrl}" class="directions-link" target="_blank" rel="noopener" aria-label="Walking directions">🚶</a></p>
+            <p class="distance">${Math.round(board.stop.distanceMeters)}m away <a href="${directionsUrl}" class="directions-link" target="_blank" rel="noopener" aria-label="Walking directions to this stop">🚶 Walk</a></p>
             <div class="departures-list">${departuresHtml}</div>
             <p class="timestamp">Updated ${timestamp}${staleIndicator}</p>
         </div>
@@ -247,7 +247,7 @@ function renderTrainStationCard(board: TrainDepartureBoard, errorMessage?: strin
                 <h2>${station.name}</h2>
                 <span class="station-badge">${station.crsCode}</span>
             </div>
-            <p class="distance">${formatDistance(station.distanceMeters)} <a href="${directionsUrl}" class="directions-link" target="_blank" rel="noopener" aria-label="Walking directions">🚶</a></p>
+            <p class="distance">${formatDistance(station.distanceMeters)} <a href="${directionsUrl}" class="directions-link" target="_blank" rel="noopener" aria-label="Walking directions to this stop">🚶 Walk</a></p>
             <div class="departures-list">${departuresHtml}</div>
             <p class="timestamp">Updated ${timestamp}${staleIndicator}</p>
         </div>
