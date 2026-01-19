@@ -8,6 +8,7 @@ import {
 } from '@/core';
 import { reverseGeocodeToPostcode } from '@/api';
 import { debounce } from '@/utils/helpers';
+import { getDirectionsUrl } from '@/utils/maps-link';
 import type {
     Coordinates,
     Departure,
@@ -120,6 +121,7 @@ function renderDepartureCard(board: DepartureBoard): string {
 
     const timestamp = new Date(board.lastUpdated).toLocaleTimeString();
     const staleIndicator = board.isStale ? ' (cached)' : '';
+    const directionsUrl = getDirectionsUrl(board.stop.coordinates);
 
     return `
         <div class="card">
@@ -127,7 +129,7 @@ function renderDepartureCard(board: DepartureBoard): string {
                 <h2>${board.stop.commonName}${indicator}</h2>
                 ${bearingBadge}
             </div>
-            <p class="distance">${Math.round(board.stop.distanceMeters)}m away</p>
+            <p class="distance">${Math.round(board.stop.distanceMeters)}m away <a href="${directionsUrl}" class="directions-link" target="_blank" rel="noopener" aria-label="Walking directions">🚶</a></p>
             <div class="departures-list">${departuresHtml}</div>
             <p class="timestamp">Updated ${timestamp}${staleIndicator}</p>
         </div>
@@ -237,6 +239,7 @@ function renderTrainStationCard(board: TrainDepartureBoard, errorMessage?: strin
 
     const timestamp = new Date(lastUpdated).toLocaleTimeString();
     const staleIndicator = isStale ? ' (cached)' : '';
+    const directionsUrl = getDirectionsUrl(station.coordinates);
 
     return `
         <div class="card train-station-card">
@@ -244,7 +247,7 @@ function renderTrainStationCard(board: TrainDepartureBoard, errorMessage?: strin
                 <h2>${station.name}</h2>
                 <span class="station-badge">${station.crsCode}</span>
             </div>
-            <p class="distance">${formatDistance(station.distanceMeters)}</p>
+            <p class="distance">${formatDistance(station.distanceMeters)} <a href="${directionsUrl}" class="directions-link" target="_blank" rel="noopener" aria-label="Walking directions">🚶</a></p>
             <div class="departures-list">${departuresHtml}</div>
             <p class="timestamp">Updated ${timestamp}${staleIndicator}</p>
         </div>
