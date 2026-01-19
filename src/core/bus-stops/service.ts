@@ -248,12 +248,10 @@ export const BusStopService = {
             // Add opposite direction stops (up to 2)
             stopsToShow.push(...oppositeStops.slice(0, 2));
 
-            // Fetch departures for all stops
-            const boards: DepartureBoard[] = [];
-            for (const stop of stopsToShow) {
-                const board = await this.getDeparturesForStop(stop);
-                boards.push(board);
-            }
+            // Fetch departures for all stops in parallel
+            const boards = await Promise.all(
+                stopsToShow.map(stop => this.getDeparturesForStop(stop))
+            );
 
             return { success: true, boards };
         } catch (error) {
@@ -347,18 +345,19 @@ export const BusStopService = {
             // Take up to 2 from each direction
             const stopsToShow = [...primaryStops.slice(0, 2), ...oppositeStops.slice(0, 2)];
 
-            // Fetch fresh departures from BODS for all stops
-            const boards: DepartureBoard[] = [];
-            for (const stop of stopsToShow) {
-                const departures = await fetchDeparturesForStop(stop, 3);
-                await BusStopCache.setDepartures(stop.atcoCode, departures);
-                boards.push({
-                    stop,
-                    departures,
-                    lastUpdated: Date.now(),
-                    isStale: false,
-                });
-            }
+            // Fetch fresh departures for all stops in parallel
+            const boards = await Promise.all(
+                stopsToShow.map(async stop => {
+                    const departures = await fetchDeparturesForStop(stop, 3);
+                    await BusStopCache.setDepartures(stop.atcoCode, departures);
+                    return {
+                        stop,
+                        departures,
+                        lastUpdated: Date.now(),
+                        isStale: false,
+                    };
+                })
+            );
 
             return { success: true, boards };
         } catch (error) {
