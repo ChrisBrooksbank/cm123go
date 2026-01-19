@@ -52,8 +52,8 @@ export default defineConfig({
                 name: 'cm123go',
                 short_name: 'cm123go',
                 description: 'Transport app for Chelmsford UK',
-                theme_color: '#2563eb',
-                background_color: '#f5f5f5',
+                theme_color: '#5C6B73',
+                background_color: '#F7F5F2',
                 display: 'standalone',
                 icons: [
                     {
