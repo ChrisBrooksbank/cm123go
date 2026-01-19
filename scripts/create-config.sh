@@ -5,6 +5,9 @@ cat > public/app.config.json << EOF
 {
   "busStops": {
     "bodsApiKey": "${BODS_API_KEY}"
+  },
+  "trainStations": {
+    "railDataApiKey": "${RAIL_DATA_API_KEY}"
   }
 }
 EOF
