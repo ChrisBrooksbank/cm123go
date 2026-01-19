@@ -22,8 +22,8 @@ const CHELMSFORD_STATIONS: TrainStation[] = [
         crsCode: 'BPA',
         name: 'Beaulieu Park',
         coordinates: {
-            latitude: 51.7473,
-            longitude: 0.4983,
+            latitude: 51.7574,
+            longitude: 0.5187,
         },
     },
 ];
