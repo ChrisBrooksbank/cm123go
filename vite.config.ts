@@ -70,6 +70,11 @@ export default defineConfig({
                 changeOrigin: true,
                 rewrite: path => path.replace(/^\/api\/bods/, '/api/v1'),
             },
+            '/api/firstbus': {
+                target: 'https://www.firstbus.co.uk',
+                changeOrigin: true,
+                rewrite: path => path.replace(/^\/api\/firstbus/, ''),
+            },
         },
     },
 });

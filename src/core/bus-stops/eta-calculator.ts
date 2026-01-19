@@ -1,10 +1,13 @@
 /**
  * ETA Calculator
- * Combines SIRI-VM real-time vehicle positions with GTFS timetable data
- * to calculate estimated departure times.
+ * Fetches departure times from multiple sources:
+ * 1. First Bus API (primary for First Essex buses)
+ * 2. BODS SIRI-VM (fallback for other operators)
+ * 3. GTFS timetable data (scheduled times)
  */
 
 import { Logger } from '@utils/logger';
+import { fetchFirstBusDepartures } from '@api/first-bus';
 import { fetchVehiclesNear, calculateDistance } from '@api/bods-siri-vm';
 import { getScheduledDepartures, isGTFSDataAvailable } from '@api/bods-gtfs';
 import type { Departure, Coordinates, VehicleActivity, BusStop } from '@/types';
@@ -12,15 +15,32 @@ import type { Departure, Coordinates, VehicleActivity, BusStop } from '@/types';
 /** Average bus speed for ETA calculations (meters per second) */
 const AVERAGE_BUS_SPEED_MPS = 8; // ~29 km/h in urban areas
 
-// MAX_TIME_DIFFERENCE_SECONDS would be used for more precise vehicle-to-trip matching
-// const MAX_TIME_DIFFERENCE_SECONDS = 600; // 10 minutes
-
 /**
- * Calculate departures for a bus stop by combining real-time and timetable data
+ * Calculate departures for a bus stop using multiple data sources
+ * Priority: First Bus API > BODS SIRI-VM > GTFS timetables
  * @param stop - Bus stop to get departures for
  * @param limit - Maximum number of departures to return
  */
 export async function calculateDepartures(stop: BusStop, limit = 3): Promise<Departure[]> {
+    // Try First Bus API first (works well for First Essex)
+    Logger.info('Trying First Bus API', { atcoCode: stop.atcoCode });
+    const firstBusDepartures = await fetchFirstBusDepartures(stop.atcoCode, limit);
+
+    if (firstBusDepartures.length > 0) {
+        Logger.info('Got departures from First Bus API', { count: firstBusDepartures.length });
+        return firstBusDepartures;
+    }
+
+    // Fall back to BODS SIRI-VM + GTFS
+    Logger.info('First Bus returned no data, trying BODS', { atcoCode: stop.atcoCode });
+    return calculateDeparturesFromBODS(stop, limit);
+}
+
+/**
+ * Calculate departures using BODS data (SIRI-VM + GTFS)
+ * This is the fallback when First Bus API doesn't have data
+ */
+async function calculateDeparturesFromBODS(stop: BusStop, limit: number): Promise<Departure[]> {
     const stopCoords = stop.coordinates;
 
     // Try to get scheduled departures first
@@ -47,7 +67,6 @@ export async function calculateDepartures(stop: BusStop, limit = 3): Promise<Dep
 
     // Match vehicles to scheduled departures and calculate ETAs
     const departures: Departure[] = [];
-    const matchedSchedules = new Set<string>();
 
     for (const scheduled of scheduledDepartures) {
         // Find a matching vehicle for this scheduled departure
@@ -56,7 +75,6 @@ export async function calculateDepartures(stop: BusStop, limit = 3): Promise<Dep
         if (matchingVehicle) {
             // Calculate real-time ETA based on vehicle position
             const eta = calculateETAFromVehicle(matchingVehicle, stopCoords);
-            matchedSchedules.add(`${scheduled.line}-${scheduled.departureTime}`);
 
             departures.push({
                 line: scheduled.line,

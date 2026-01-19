@@ -13,6 +13,13 @@
   status = 200
   force = true
 
+# Proxy First Bus API to avoid CORS errors
+[[redirects]]
+  from = "/api/firstbus/*"
+  to = "https://www.firstbus.co.uk/:splat"
+  status = 200
+  force = true
+
 # SPA redirect - all routes to index.html
 [[redirects]]
   from = "/*"
