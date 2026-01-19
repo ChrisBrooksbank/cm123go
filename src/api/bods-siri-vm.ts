@@ -4,7 +4,7 @@
  */
 
 import { Logger } from '@utils/logger';
-import { retryWithBackoff } from '@utils/helpers';
+import { resilientFetch, CircuitOpenError } from '@utils/helpers';
 import { getConfig } from '@config/index';
 import { BusStopError } from '@core/bus-stops/errors';
 import { BusStopErrorCode } from '@/types';
@@ -121,34 +121,42 @@ async function fetchVehiclePositions(boundingBox: BoundingBox): Promise<VehicleA
         url: url.replace(/api_key=.*/, 'api_key=***'),
     });
 
-    const response = await retryWithBackoff(
-        async () => {
-            const res = await fetch(url);
-
-            if (res.status === 429) {
-                throw new BusStopError('Rate limited by BODS API', BusStopErrorCode.RATE_LIMITED);
-            }
-
-            if (!res.ok) {
-                throw new BusStopError(
-                    `BODS API error: ${res.status}`,
-                    BusStopErrorCode.SIRI_VM_UNAVAILABLE
-                );
-            }
-
-            return res.text();
-        },
-        2,
-        1000
-    );
-
     try {
+        const response = await resilientFetch<string>(
+            'bods-siri-vm',
+            bbox,
+            async () => {
+                const res = await fetch(url);
+
+                if (res.status === 429) {
+                    throw new BusStopError(
+                        'Rate limited by BODS API',
+                        BusStopErrorCode.RATE_LIMITED
+                    );
+                }
+
+                if (!res.ok) {
+                    throw new BusStopError(
+                        `BODS API error: ${res.status}`,
+                        BusStopErrorCode.SIRI_VM_UNAVAILABLE
+                    );
+                }
+
+                return res.text();
+            },
+            { retry: { maxAttempts: 2, initialDelay: 1000 } }
+        );
+
         const vehicles = parseSiriVmResponse(response);
         Logger.debug(`Found ${vehicles.length} vehicles in bounding box`);
         return vehicles;
     } catch (error) {
+        if (error instanceof CircuitOpenError) {
+            Logger.warn('BODS SIRI-VM circuit open', { retryAfter: error.retryAfter });
+            return [];
+        }
         if (error instanceof BusStopError) throw error;
-        Logger.warn('Failed to parse SIRI-VM response', error);
+        Logger.warn('Failed to fetch/parse SIRI-VM response', error);
         return [];
     }
 }

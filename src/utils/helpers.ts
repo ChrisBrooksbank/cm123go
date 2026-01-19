@@ -4,6 +4,27 @@
 
 import { Logger } from './logger';
 
+// Re-export resilience utilities
+export {
+    withCircuitBreaker,
+    CircuitOpenError,
+    getCircuitBreakerStatus,
+    resetCircuitBreaker,
+    resetAllCircuitBreakers,
+    type CircuitBreakerConfig,
+    type CircuitState,
+} from './circuit-breaker';
+
+export {
+    throttledRequest,
+    configureThrottle,
+    getThrottleStatus,
+    resetThrottle,
+    type ThrottleConfig,
+} from './request-throttle';
+
+export { resilientFetch, API_CIRCUIT_CONFIGS, type ResilientFetchConfig } from './resilient-fetch';
+
 /**
  * Retry an async function with exponential backoff
  */

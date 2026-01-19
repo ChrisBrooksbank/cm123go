@@ -7,7 +7,7 @@
  */
 
 import { Logger } from '@utils/logger';
-import { retryWithBackoff } from '@utils/helpers';
+import { resilientFetch, CircuitOpenError } from '@utils/helpers';
 import type { Departure } from '@/types';
 
 /** First Bus API response - TransportAPI format (departures.all) */
@@ -61,7 +61,9 @@ export async function fetchFirstBusDepartures(atcoCode: string, limit = 3): Prom
     Logger.info('Fetching First Bus departures', { atcoCode });
 
     try {
-        const response = await retryWithBackoff(
+        const response = await resilientFetch<FirstBusResponse>(
+            'first-bus',
+            atcoCode,
             async () => {
                 const res = await fetch(url);
 
@@ -71,8 +73,7 @@ export async function fetchFirstBusDepartures(atcoCode: string, limit = 3): Prom
 
                 return res.json() as Promise<FirstBusResponse>;
             },
-            2,
-            1000
+            { retry: { maxAttempts: 2, initialDelay: 1000 } }
         );
 
         // Log raw response for debugging
@@ -135,6 +136,13 @@ export async function fetchFirstBusDepartures(atcoCode: string, limit = 3): Prom
         Logger.debug('No First Bus departures found', { atcoCode });
         return [];
     } catch (error) {
+        if (error instanceof CircuitOpenError) {
+            Logger.warn('First Bus circuit open, skipping', {
+                atcoCode,
+                retryAfter: error.retryAfter,
+            });
+            return [];
+        }
         Logger.warn('Failed to fetch First Bus departures', { atcoCode, error });
         return [];
     }

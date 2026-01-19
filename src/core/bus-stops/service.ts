@@ -21,10 +21,18 @@ type NearestStopResult =
     | { success: false; error: BusStopError };
 
 /**
- * Result type for both directions
+ * Partial failure info for a single stop
+ */
+interface StopFetchError {
+    stop: NearbyBusStop;
+    error: string;
+}
+
+/**
+ * Result type for both directions (supports partial success)
  */
 type BothDirectionsResult =
-    | { success: true; boards: DepartureBoard[] }
+    | { success: true; boards: DepartureBoard[]; partialFailures?: StopFetchError[] }
     | { success: false; error: BusStopError };
 
 /**
@@ -248,12 +256,45 @@ export const BusStopService = {
             // Add opposite direction stops (up to 2)
             stopsToShow.push(...oppositeStops.slice(0, 2));
 
-            // Fetch departures for all stops in parallel
-            const boards = await Promise.all(
+            // Fetch departures for all stops in parallel with partial success handling
+            const results = await Promise.allSettled(
                 stopsToShow.map(stop => this.getDeparturesForStop(stop))
             );
 
-            return { success: true, boards };
+            const boards: DepartureBoard[] = [];
+            const partialFailures: StopFetchError[] = [];
+
+            results.forEach((result, index) => {
+                if (result.status === 'fulfilled') {
+                    boards.push(result.value);
+                } else {
+                    const stop = stopsToShow[index];
+                    const errorMessage =
+                        result.reason instanceof Error
+                            ? result.reason.message
+                            : String(result.reason);
+                    partialFailures.push({ stop, error: errorMessage });
+                    Logger.warn('Failed to fetch departures for stop', {
+                        atcoCode: stop.atcoCode,
+                        error: errorMessage,
+                    });
+                }
+            });
+
+            // Return success if at least one stop succeeded
+            if (boards.length > 0) {
+                return {
+                    success: true,
+                    boards,
+                    partialFailures: partialFailures.length > 0 ? partialFailures : undefined,
+                };
+            }
+
+            // All failed
+            throw new BusStopError(
+                'Failed to fetch departures for all stops',
+                BusStopErrorCode.DEPARTURES_UNAVAILABLE
+            );
         } catch (error) {
             const busError =
                 error instanceof BusStopError
@@ -345,8 +386,8 @@ export const BusStopService = {
             // Take up to 2 from each direction
             const stopsToShow = [...primaryStops.slice(0, 2), ...oppositeStops.slice(0, 2)];
 
-            // Fetch fresh departures for all stops in parallel
-            const boards = await Promise.all(
+            // Fetch fresh departures for all stops in parallel with partial success handling
+            const results = await Promise.allSettled(
                 stopsToShow.map(async stop => {
                     const departures = await fetchDeparturesForStop(stop, 3);
                     await BusStopCache.setDepartures(stop.atcoCode, departures);
@@ -359,7 +400,38 @@ export const BusStopService = {
                 })
             );
 
-            return { success: true, boards };
+            const boards: DepartureBoard[] = [];
+            const partialFailures: StopFetchError[] = [];
+
+            results.forEach((result, index) => {
+                if (result.status === 'fulfilled') {
+                    boards.push(result.value);
+                } else {
+                    const stop = stopsToShow[index];
+                    const errorMessage =
+                        result.reason instanceof Error
+                            ? result.reason.message
+                            : String(result.reason);
+                    partialFailures.push({ stop, error: errorMessage });
+                    Logger.warn('Failed to refresh departures for stop', {
+                        atcoCode: stop.atcoCode,
+                        error: errorMessage,
+                    });
+                }
+            });
+
+            if (boards.length > 0) {
+                return {
+                    success: true,
+                    boards,
+                    partialFailures: partialFailures.length > 0 ? partialFailures : undefined,
+                };
+            }
+
+            throw new BusStopError(
+                'Failed to refresh departures for all stops',
+                BusStopErrorCode.DEPARTURES_UNAVAILABLE
+            );
         } catch (error) {
             const busError =
                 error instanceof BusStopError
