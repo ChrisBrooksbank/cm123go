@@ -6,6 +6,13 @@
   NODE_VERSION = "20"
   SECRETS_SCAN_OMIT_PATHS = "public/app.config.json,dist/app.config.json"
 
+# Proxy BODS API to avoid CORS errors
+[[redirects]]
+  from = "/api/bods/*"
+  to = "https://data.bus-data.dft.gov.uk/api/v1/:splat"
+  status = 200
+  force = true
+
 # SPA redirect - all routes to index.html
 [[redirects]]
   from = "/*"

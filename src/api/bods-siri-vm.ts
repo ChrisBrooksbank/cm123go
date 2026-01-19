@@ -105,15 +105,16 @@ function parseSiriVmResponse(xmlText: string): VehicleActivity[] {
  */
 export async function fetchVehiclePositions(boundingBox: BoundingBox): Promise<VehicleActivity[]> {
     const config = getConfig();
-    const { bodsApiUrl, bodsApiKey } = config.busStops;
+    const { bodsApiKey } = config.busStops;
 
     if (!bodsApiKey) {
         throw new BusStopError('BODS API key not configured', BusStopErrorCode.API_KEY_MISSING);
     }
 
     // BODS SIRI-VM endpoint format: boundingBox=minLat,minLon,maxLat,maxLon
+    // Uses /api/bods proxy to avoid CORS errors (proxied via Netlify/Vite)
     const bbox = `${boundingBox.minLatitude},${boundingBox.minLongitude},${boundingBox.maxLatitude},${boundingBox.maxLongitude}`;
-    const url = `${bodsApiUrl}/datafeed/?boundingBox=${bbox}&api_key=${bodsApiKey}`;
+    const url = `/api/bods/datafeed/?boundingBox=${bbox}&api_key=${bodsApiKey}`;
 
     Logger.debug('Fetching SIRI-VM vehicle positions', { boundingBox });
 

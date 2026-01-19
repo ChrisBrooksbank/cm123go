@@ -29,9 +29,7 @@ export const ConfigSchema = z.object({
         .object({
             /** NAPTAN API base URL */
             naptanApiUrl: z.string().url().default('https://naptan.api.dft.gov.uk/v1'),
-            /** BODS API base URL */
-            bodsApiUrl: z.string().url().default('https://data.bus-data.dft.gov.uk/api/v1'),
-            /** BODS API key */
+            /** BODS API key (API is accessed via /api/bods proxy) */
             bodsApiKey: z.string().optional(),
             /** Cache TTL for stops in milliseconds (default: 7 days) */
             stopsCacheTtl: z.number().positive().default(604800000),

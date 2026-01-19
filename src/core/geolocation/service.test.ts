@@ -16,7 +16,6 @@ describe('GeolocationService', () => {
             },
             busStops: {
                 naptanApiUrl: 'https://naptan.api.dft.gov.uk/v1',
-                bodsApiUrl: 'https://data.bus-data.dft.gov.uk/api/v1',
                 stopsCacheTtl: 604800000,
                 departuresCacheTtl: 60000,
                 timetableCacheTtl: 86400000,

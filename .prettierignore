@@ -1,4 +1,5 @@
 dist/
+dev-dist/
 coverage/
 node_modules/
 *.min.js

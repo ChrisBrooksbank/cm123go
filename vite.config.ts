@@ -7,6 +7,9 @@ export default defineConfig({
         tsconfigPaths(),
         VitePWA({
             registerType: 'autoUpdate',
+            devOptions: {
+                enabled: true,
+            },
             workbox: {
                 globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
                 runtimeCaching: [
@@ -22,7 +25,7 @@ export default defineConfig({
                         },
                     },
                     {
-                        urlPattern: /^https:\/\/data\.bus-data\.dft\.gov\.uk/i,
+                        urlPattern: /\/api\/bods\//i,
                         handler: 'NetworkFirst',
                         options: {
                             cacheName: 'bods-cache',
@@ -59,5 +62,14 @@ export default defineConfig({
     build: {
         outDir: 'dist',
         sourcemap: true,
+    },
+    server: {
+        proxy: {
+            '/api/bods': {
+                target: 'https://data.bus-data.dft.gov.uk',
+                changeOrigin: true,
+                rewrite: path => path.replace(/^\/api\/bods/, '/api/v1'),
+            },
+        },
     },
 });
