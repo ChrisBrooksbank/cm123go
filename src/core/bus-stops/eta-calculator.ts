@@ -29,9 +29,9 @@ export async function calculateDepartures(stop: BusStop, limit = 3): Promise<Dep
         ? await getScheduledDepartures(stop.atcoCode, limit * 2)
         : [];
 
-    // If no GTFS data, we can only use real-time data
-    if (scheduledDepartures.length === 0 && !gtfsAvailable) {
-        Logger.debug('No GTFS data available, using real-time only');
+    // If no scheduled departures, fall back to real-time data only
+    if (scheduledDepartures.length === 0) {
+        Logger.debug('No scheduled departures found, using real-time only');
         return getRealTimeOnlyDepartures(stopCoords, limit);
     }
 
