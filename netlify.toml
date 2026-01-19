@@ -1,5 +1,5 @@
 [build]
-  command = "npm run build"
+  command = "echo '{\"busStops\":{\"transportApiAppId\":\"'$TRANSPORT_API_APP_ID'\",\"transportApiAppKey\":\"'$TRANSPORT_API_KEY'\"}}' > public/app.config.json && npm run build"
   publish = "dist"
 
 [build.environment]
