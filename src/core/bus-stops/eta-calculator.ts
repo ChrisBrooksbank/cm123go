@@ -28,7 +28,7 @@ export async function calculateDepartures(stop: BusStop, limit = 3): Promise<Dep
 
     if (firstBusDepartures.length > 0) {
         Logger.info('Got departures from First Bus API', { count: firstBusDepartures.length });
-        return firstBusDepartures;
+        return enrichFirstBusDepartures(firstBusDepartures, stop.coordinates);
     }
 
     // Fall back to BODS SIRI-VM + GTFS
@@ -223,6 +223,58 @@ function normalizeLineRef(lineRef: string): string {
     // Remove operator prefix if present
     const parts = lineRef.split(':');
     return parts[parts.length - 1].trim().toUpperCase();
+}
+
+/**
+ * Enrich a departure's destination using SIRI-VM data if available
+ */
+function enrichDestinationFromSiriVm(departure: Departure, vehicles: VehicleActivity[]): string {
+    const normalizedLine = normalizeLineRef(departure.line);
+
+    // Find matching vehicle by line
+    const matchingVehicle = vehicles.find(
+        v => normalizeLineRef(v.lineRef) === normalizedLine && v.destinationName
+    );
+
+    if (!matchingVehicle?.destinationName) {
+        return departure.destination;
+    }
+
+    const siriDest = matchingVehicle.destinationName;
+    const firstBusDest = departure.destination;
+
+    // Use SIRI-VM destination if it's longer (likely more complete)
+    if (siriDest.length > firstBusDest.length) {
+        Logger.debug('Enriched destination', { original: firstBusDest, enriched: siriDest });
+        return siriDest;
+    }
+
+    return departure.destination;
+}
+
+/**
+ * Enrich First Bus departures with SIRI-VM destination names
+ */
+async function enrichFirstBusDepartures(
+    departures: Departure[],
+    stopCoords: Coordinates
+): Promise<Departure[]> {
+    try {
+        // Fetch SIRI-VM with 3s timeout to avoid blocking
+        const vehicles = await Promise.race([
+            fetchVehiclesNear(stopCoords),
+            new Promise<VehicleActivity[]>(resolve => setTimeout(() => resolve([]), 3000)),
+        ]);
+
+        if (vehicles.length === 0) return departures;
+
+        return departures.map(dep => ({
+            ...dep,
+            destination: enrichDestinationFromSiriVm(dep, vehicles),
+        }));
+    } catch {
+        return departures; // Graceful fallback
+    }
 }
 
 /**

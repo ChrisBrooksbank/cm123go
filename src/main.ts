@@ -14,23 +14,42 @@ interface BeforeInstallPromptEvent extends Event {
     userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+const INSTALL_DISMISS_KEY = 'install-dismissed';
+const DISMISS_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
+
+function isInstallDismissed(): boolean {
+    const dismissed = localStorage.getItem(INSTALL_DISMISS_KEY);
+    if (!dismissed) return false;
+    const dismissedAt = parseInt(dismissed, 10);
+    return Date.now() - dismissedAt < DISMISS_DURATION_MS;
+}
+
+function showInstallBanner(): void {
+    const banner = document.getElementById('install-banner');
+    if (banner && !isInstallDismissed()) {
+        banner.hidden = false;
+    }
+}
+
+function hideInstallBanner(): void {
+    const banner = document.getElementById('install-banner');
+    if (banner) {
+        banner.hidden = true;
+    }
+}
 
 window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
     deferredPrompt = e as BeforeInstallPromptEvent;
-    const installBtn = document.getElementById('install-btn');
-    if (installBtn) {
-        installBtn.hidden = false;
-    }
+    showInstallBanner();
 });
 
 window.addEventListener('appinstalled', () => {
     deferredPrompt = null;
-    const installBtn = document.getElementById('install-btn');
-    if (installBtn) {
-        installBtn.hidden = true;
-    }
+    hideInstallBanner();
+    localStorage.removeItem(INSTALL_DISMISS_KEY);
     Logger.success('App installed');
 });
 
@@ -233,8 +252,10 @@ async function init() {
             refreshBtn.addEventListener('click', debounce(handleRefresh, 1000));
         }
 
-        // Set up install button
+        // Set up install banner buttons
         const installBtn = document.getElementById('install-btn');
+        const dismissBtn = document.getElementById('install-dismiss');
+
         if (installBtn) {
             installBtn.addEventListener('click', async () => {
                 if (!deferredPrompt) return;
@@ -242,7 +263,15 @@ async function init() {
                 const { outcome } = await deferredPrompt.userChoice;
                 Logger.info(`Install prompt outcome: ${outcome}`);
                 deferredPrompt = null;
-                installBtn.hidden = true;
+                hideInstallBanner();
+            });
+        }
+
+        if (dismissBtn) {
+            dismissBtn.addEventListener('click', () => {
+                localStorage.setItem(INSTALL_DISMISS_KEY, Date.now().toString());
+                hideInstallBanner();
+                Logger.info('Install banner dismissed');
             });
         }
     } catch (error) {

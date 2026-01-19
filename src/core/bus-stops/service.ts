@@ -16,14 +16,14 @@ import { BusStopErrorCode } from '@/types';
 /**
  * Result type for nearest stop with departures
  */
-export type NearestStopResult =
+type NearestStopResult =
     | { success: true; board: DepartureBoard }
     | { success: false; error: BusStopError };
 
 /**
  * Result type for both directions
  */
-export type BothDirectionsResult =
+type BothDirectionsResult =
     | { success: true; boards: DepartureBoard[] }
     | { success: false; error: BusStopError };
 

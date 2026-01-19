@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * Centralized Logging Utility
  * Provides consistent logging with timestamps and log levels

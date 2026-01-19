@@ -23,6 +23,7 @@ export async function loadConfig(path = '/app.config.json'): Promise<AppConfig> 
         const result = ConfigSchema.safeParse(rawConfig);
 
         if (!result.success) {
+            // eslint-disable-next-line no-console -- Logger not available before config loads
             console.error('Config validation errors:', result.error.format());
             throw new ConfigValidationError('Invalid configuration', result.error);
         }
@@ -34,6 +35,7 @@ export async function loadConfig(path = '/app.config.json'): Promise<AppConfig> 
             throw error;
         }
         // Return defaults if config file not found
+        // eslint-disable-next-line no-console -- Logger not available before config loads
         console.warn('Config file not found, using defaults');
         config = ConfigSchema.parse({});
         return config;
@@ -49,13 +51,6 @@ export function getConfig(): AppConfig {
         throw new Error('Config not loaded. Call loadConfig() first.');
     }
     return config;
-}
-
-/**
- * Check if config has been loaded
- */
-export function isConfigLoaded(): boolean {
-    return config !== null;
 }
 
 /**

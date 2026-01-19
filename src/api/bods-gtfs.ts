@@ -129,42 +129,6 @@ export interface ScheduledDeparture {
 }
 
 /**
- * Get trip details by ID
- */
-export async function getTripDetails(tripId: string): Promise<GTFSTrip | null> {
-    const gtfs = await loadGTFSData();
-    return gtfs.trips[tripId] || null;
-}
-
-/**
- * Get route details by ID
- */
-export async function getRouteDetails(routeId: string): Promise<GTFSRoute | null> {
-    const gtfs = await loadGTFSData();
-    return gtfs.routes[routeId] || null;
-}
-
-/**
- * Get all stop times for a trip (to calculate vehicle progress)
- */
-export async function getTripStopTimes(tripId: string): Promise<GTFSStopTime[]> {
-    const gtfs = await loadGTFSData();
-
-    // Need to search through all stops - this is inefficient but works for small datasets
-    const tripStopTimes: GTFSStopTime[] = [];
-
-    for (const stopTimes of Object.values(gtfs.stopTimes)) {
-        for (const stopTime of stopTimes) {
-            if (stopTime.tripId === tripId) {
-                tripStopTimes.push(stopTime);
-            }
-        }
-    }
-
-    return tripStopTimes.sort((a, b) => a.stopSequence - b.stopSequence);
-}
-
-/**
  * Format current time as HH:MM:SS
  */
 function formatTime(date: Date): string {
@@ -189,12 +153,4 @@ export async function isGTFSDataAvailable(): Promise<boolean> {
     } catch {
         return false;
     }
-}
-
-/**
- * Clear the GTFS cache (useful for testing or forcing refresh)
- */
-export function clearGTFSCache(): void {
-    cachedGTFSData = null;
-    cacheTimestamp = 0;
 }

@@ -175,16 +175,3 @@ function calculateMinutesUntil(timeStr: string): number {
 
     return 0;
 }
-
-/**
- * Check if First Bus API is available for a stop
- * First Bus only operates in certain areas
- */
-export async function isFirstBusAvailable(atcoCode: string): Promise<boolean> {
-    try {
-        const departures = await fetchFirstBusDepartures(atcoCode, 1);
-        return departures.length > 0;
-    } catch {
-        return false;
-    }
-}

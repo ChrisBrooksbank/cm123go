@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * Process NAPTAN CSV to extract Chelmsford bus stops
  * Run with: node scripts/process-stops.js

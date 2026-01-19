@@ -15,7 +15,7 @@ import type { VehicleActivity, BoundingBox, Coordinates } from '@/types';
  * @param center - Center coordinates
  * @param radiusMeters - Radius in meters
  */
-export function createBoundingBox(center: Coordinates, radiusMeters: number): BoundingBox {
+function createBoundingBox(center: Coordinates, radiusMeters: number): BoundingBox {
     // Approximate degrees per meter at UK latitudes
     // 1 degree latitude ≈ 111,320 meters
     // 1 degree longitude ≈ 111,320 * cos(latitude) meters
@@ -103,7 +103,7 @@ function parseSiriVmResponse(xmlText: string): VehicleActivity[] {
  * Fetch vehicle positions within a bounding box from BODS SIRI-VM
  * @param boundingBox - Geographic area to search
  */
-export async function fetchVehiclePositions(boundingBox: BoundingBox): Promise<VehicleActivity[]> {
+async function fetchVehiclePositions(boundingBox: BoundingBox): Promise<VehicleActivity[]> {
     const config = getConfig();
     const { bodsApiKey } = config.busStops;
 

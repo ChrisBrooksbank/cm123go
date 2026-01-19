@@ -4,23 +4,10 @@
 
 import { z } from 'zod';
 
-// Re-export config types for convenience
-export type { AppConfig } from '@config/schema';
-
-// Log levels
-export type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
-
-export interface LogLevels {
-    DEBUG: number;
-    INFO: number;
-    WARN: number;
-    ERROR: number;
-}
-
 // --- Geolocation Types ---
 
 /** Geographic coordinates (WGS84) */
-export const CoordinatesSchema = z.object({
+const CoordinatesSchema = z.object({
     latitude: z.number().min(-90).max(90),
     longitude: z.number().min(-180).max(180),
 });
@@ -52,7 +39,6 @@ export type GeolocationErrorCodeType =
 export const UKPostcodeSchema = z
     .string()
     .regex(/^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i, 'Invalid UK postcode format');
-export type UKPostcode = z.infer<typeof UKPostcodeSchema>;
 
 /** Geolocation options for the service */
 export interface GeolocationOptions {
@@ -79,13 +65,13 @@ export const BusStopSchema = z.object({
 export type BusStop = z.infer<typeof BusStopSchema>;
 
 /** Bus stop with calculated distance */
-export const NearbyBusStopSchema = BusStopSchema.extend({
+const NearbyBusStopSchema = BusStopSchema.extend({
     distanceMeters: z.number(),
 });
 export type NearbyBusStop = z.infer<typeof NearbyBusStopSchema>;
 
 /** Departure information */
-export const DepartureSchema = z.object({
+const DepartureSchema = z.object({
     line: z.string(),
     destination: z.string(),
     expectedDeparture: z.string(),
@@ -98,13 +84,13 @@ export const DepartureSchema = z.object({
 export type Departure = z.infer<typeof DepartureSchema>;
 
 /** Departure board response */
-export const DepartureBoardSchema = z.object({
+const _DepartureBoardSchema = z.object({
     stop: NearbyBusStopSchema,
     departures: z.array(DepartureSchema),
     lastUpdated: z.number(),
     isStale: z.boolean(),
 });
-export type DepartureBoard = z.infer<typeof DepartureBoardSchema>;
+export type DepartureBoard = z.infer<typeof _DepartureBoardSchema>;
 
 /** Bus stop error codes */
 export const BusStopErrorCode = {
@@ -121,13 +107,13 @@ export type BusStopErrorCodeType = (typeof BusStopErrorCode)[keyof typeof BusSto
 // --- BODS (Bus Open Data Service) Types ---
 
 /** Bounding box for geographic queries */
-export const BoundingBoxSchema = z.object({
+const _BoundingBoxSchema = z.object({
     minLatitude: z.number().min(-90).max(90),
     maxLatitude: z.number().min(-90).max(90),
     minLongitude: z.number().min(-180).max(180),
     maxLongitude: z.number().min(-180).max(180),
 });
-export type BoundingBox = z.infer<typeof BoundingBoxSchema>;
+export type BoundingBox = z.infer<typeof _BoundingBoxSchema>;
 
 /** SIRI-VM vehicle activity from BODS */
 export interface VehicleActivity {

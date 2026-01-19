@@ -14,7 +14,7 @@ import { LocationSchema, GeolocationErrorCode } from '@/types';
 /**
  * Result type for location acquisition
  */
-export type LocationResult =
+type LocationResult =
     | { success: true; location: Location }
     | { success: false; error: GeolocationError; requiresManualEntry: boolean };
 

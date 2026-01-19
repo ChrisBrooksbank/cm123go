@@ -37,18 +37,60 @@
                 justify-content: space-between;
                 align-items: center;
             }
-            .install-button {
-                background: white;
-                color: #2563eb;
+            .install-banner {
+                border-left: 4px solid #10b981;
+                background: linear-gradient(to right, #f0fdf4, white);
+            }
+            .install-content {
+                display: flex;
+                align-items: flex-start;
+                gap: 1rem;
+                margin-bottom: 1rem;
+            }
+            .install-icon {
+                font-size: 2rem;
+                line-height: 1;
+            }
+            .install-text h3 {
+                font-size: 1.1rem;
+                font-weight: 600;
+                color: #1f2937;
+                margin-bottom: 0.25rem;
+            }
+            .install-text p {
+                font-size: 0.9rem;
+                color: #6b7280;
+                margin: 0;
+            }
+            .install-actions {
+                display: flex;
+                gap: 0.75rem;
+            }
+            .install-button-primary {
+                background: #2563eb;
+                color: white;
                 border: none;
-                padding: 0.5rem 1rem;
+                padding: 0.625rem 1.25rem;
                 border-radius: 6px;
                 font-weight: 600;
                 cursor: pointer;
-                font-size: 0.875rem;
+                font-size: 0.9rem;
             }
-            .install-button:hover {
-                background: #f0f0f0;
+            .install-button-primary:hover {
+                background: #1d4ed8;
+            }
+            .install-button-dismiss {
+                background: transparent;
+                color: #6b7280;
+                border: 1px solid #d1d5db;
+                padding: 0.625rem 1rem;
+                border-radius: 6px;
+                font-weight: 500;
+                cursor: pointer;
+                font-size: 0.9rem;
+            }
+            .install-button-dismiss:hover {
+                background: #f3f4f6;
             }
             header h1 {
                 font-size: 1.5rem;
@@ -208,12 +250,25 @@
     <body>
         <header>
             <h1>cm123go</h1>
-            <button id="install-btn" class="install-button" hidden>Install</button>
         </header>
         <main id="app">
             <div class="card">
                 <h2>Your Location</h2>
                 <p id="postcode-display">Detecting your location...</p>
+            </div>
+
+            <div id="install-banner" class="card install-banner" hidden>
+                <div class="install-content">
+                    <div class="install-icon">📲</div>
+                    <div class="install-text">
+                        <h3>Install cm123go</h3>
+                        <p>Add to your home screen for quick access and offline use</p>
+                    </div>
+                </div>
+                <div class="install-actions">
+                    <button id="install-btn" class="install-button-primary">Install App</button>
+                    <button id="install-dismiss" class="install-button-dismiss">Not now</button>
+                </div>
             </div>
 
             <div id="departures-container"></div>

@@ -16,7 +16,7 @@ import { BusStopErrorCode } from '@/types';
  * @param limit - Maximum departures to return (default: 3)
  * @param stopInfo - Optional stop info if already available (avoids lookup)
  */
-export async function fetchDepartures(
+async function fetchDepartures(
     atcoCode: string,
     limit = 3,
     stopInfo?: BusStop
@@ -60,32 +60,4 @@ export async function fetchDepartures(
  */
 export async function fetchDeparturesForStop(stop: BusStop, limit = 3): Promise<Departure[]> {
     return fetchDepartures(stop.atcoCode, limit, stop);
-}
-
-/**
- * Calculate minutes until departure from a time string (HH:MM format)
- * Exported for backward compatibility with existing code
- */
-export function calculateMinutesUntil(timeStr: string): number {
-    if (!timeStr || timeStr === 'Due') {
-        return 0;
-    }
-
-    const now = new Date();
-    const [hours, minutes] = timeStr.split(':').map(Number);
-
-    if (isNaN(hours) || isNaN(minutes)) {
-        return 0;
-    }
-
-    const departureDate = new Date();
-    departureDate.setHours(hours, minutes, 0, 0);
-
-    // If the time is earlier than now, assume it's tomorrow
-    if (departureDate < now) {
-        departureDate.setDate(departureDate.getDate() + 1);
-    }
-
-    const diffMs = departureDate.getTime() - now.getTime();
-    return Math.round(diffMs / 60000);
 }
