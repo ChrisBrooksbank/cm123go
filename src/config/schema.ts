@@ -52,6 +52,18 @@ export const ConfigSchema = z.object({
                 .default({}),
         })
         .default({}),
+    trainStations: z
+        .object({
+            /** Huxley2 API URL (National Rail Darwin proxy) */
+            huxleyApiUrl: z.string().url().default('https://huxley2.azurewebsites.net'),
+            /** Huxley access token (from raildata.org.uk) */
+            huxleyAccessToken: z.string().optional(),
+            /** Cache TTL for departures in milliseconds (default: 60s) */
+            departuresCacheTtl: z.number().positive().default(60000),
+            /** Maximum departures to fetch per station */
+            maxDeparturesPerStation: z.number().positive().default(5),
+        })
+        .default({}),
 });
 
 export type AppConfig = z.infer<typeof ConfigSchema>;

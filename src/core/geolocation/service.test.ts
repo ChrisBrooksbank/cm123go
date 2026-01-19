@@ -28,6 +28,11 @@ describe('GeolocationService', () => {
                     west: 0.4,
                 },
             },
+            trainStations: {
+                huxleyApiUrl: 'https://huxley2.azurewebsites.net',
+                departuresCacheTtl: 60000,
+                maxDeparturesPerStation: 5,
+            },
         });
     });
 

@@ -6,7 +6,7 @@
 import { Logger } from './logger';
 
 /** Circuit breaker states */
-export type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
+type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 
 /** Configuration for a circuit breaker */
 export interface CircuitBreakerConfig {

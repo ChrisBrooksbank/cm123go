@@ -239,6 +239,55 @@
                 flex-wrap: wrap;
                 gap: 0.25rem;
             }
+            .station-badge {
+                display: inline-block;
+                background: #059669;
+                color: white;
+                padding: 0.15rem 0.4rem;
+                border-radius: 3px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                margin-left: 0.5rem;
+                vertical-align: middle;
+            }
+            .train-station-card {
+                border-left: 4px solid #059669;
+            }
+            .train-departure-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 0.75rem 0;
+                border-bottom: 1px solid #e5e7eb;
+            }
+            .train-departure-row:last-child {
+                border-bottom: none;
+            }
+            .platform-badge {
+                background: #f3f4f6;
+                color: #374151;
+                padding: 0.25rem 0.5rem;
+                border-radius: 4px;
+                font-weight: 600;
+                font-size: 0.75rem;
+                min-width: 3.5rem;
+                text-align: center;
+            }
+            .status-badge {
+                font-size: 0.65rem;
+                font-weight: 600;
+                padding: 0.15rem 0.35rem;
+                border-radius: 3px;
+                text-transform: uppercase;
+            }
+            .status-badge.cancelled {
+                background: #fee2e2;
+                color: #991b1b;
+            }
+            .time.cancelled {
+                color: #991b1b;
+                text-decoration: line-through;
+            }
             footer {
                 text-align: center;
                 padding: 1rem;

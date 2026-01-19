@@ -3,7 +3,7 @@
  */
 
 import { retryWithBackoff } from './helpers';
-import { withCircuitBreaker, CircuitOpenError, type CircuitBreakerConfig } from './circuit-breaker';
+import { withCircuitBreaker, type CircuitBreakerConfig } from './circuit-breaker';
 import { throttledRequest } from './request-throttle';
 
 /** Configuration for resilient fetch */
@@ -22,7 +22,7 @@ export interface ResilientFetchConfig {
 }
 
 /** Default API-specific circuit breaker configs */
-export const API_CIRCUIT_CONFIGS: Record<string, Partial<CircuitBreakerConfig>> = {
+const API_CIRCUIT_CONFIGS: Record<string, Partial<CircuitBreakerConfig>> = {
     'first-bus': {
         failureThreshold: 3,
         resetTimeout: 30000,
@@ -40,6 +40,12 @@ export const API_CIRCUIT_CONFIGS: Record<string, Partial<CircuitBreakerConfig>> 
         resetTimeout: 120000,
         successThreshold: 1,
         name: 'BODS GTFS',
+    },
+    huxley: {
+        failureThreshold: 3,
+        resetTimeout: 60000,
+        successThreshold: 2,
+        name: 'Huxley2 (National Rail)',
     },
 };
 
@@ -72,7 +78,3 @@ export async function resilientFetch<T>(
 
     return throttledRequest(fullKey, executeWithCircuitBreaker);
 }
-
-export { CircuitOpenError };
-export { getCircuitBreakerStatus, resetCircuitBreaker } from './circuit-breaker';
-export { getThrottleStatus } from './request-throttle';

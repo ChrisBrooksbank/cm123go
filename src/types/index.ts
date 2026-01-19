@@ -160,3 +160,49 @@ export interface GTFSRoute {
     routeLongName?: string;
     operatorName?: string;
 }
+
+// --- Train Station Types ---
+
+/** Train station data */
+const _TrainStationSchema = z.object({
+    crsCode: z.string(), // 3-letter CRS code (e.g., "CHM")
+    name: z.string(),
+    coordinates: CoordinatesSchema,
+});
+export type TrainStation = z.infer<typeof _TrainStationSchema>;
+
+/** Train station with calculated distance */
+export type NearbyTrainStation = TrainStation & { distanceMeters: number };
+
+// --- Train Departure Types ---
+
+/** Train departure information */
+const _TrainDepartureSchema = z.object({
+    destination: z.string(),
+    scheduledDeparture: z.string(), // "10:30"
+    expectedDeparture: z.string(), // "10:35" or same as scheduled
+    minutesUntil: z.number(),
+    platform: z.string().optional(),
+    operatorCode: z.string().optional(),
+    operatorName: z.string().optional(),
+    status: z.enum(['on-time', 'delayed', 'cancelled', 'unknown']),
+    isRealTime: z.boolean(),
+});
+export type TrainDeparture = z.infer<typeof _TrainDepartureSchema>;
+
+/** Train departure board for a station */
+export type TrainDepartureBoard = {
+    station: NearbyTrainStation;
+    departures: TrainDeparture[];
+    lastUpdated: number;
+    isStale: boolean;
+};
+
+/** Train station error codes */
+export const TrainStationErrorCode = {
+    DEPARTURES_UNAVAILABLE: 1,
+    RATE_LIMITED: 2,
+    API_KEY_MISSING: 3,
+} as const;
+export type TrainStationErrorCodeType =
+    (typeof TrainStationErrorCode)[keyof typeof TrainStationErrorCode];

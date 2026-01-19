@@ -1,9 +1,20 @@
 import { loadConfig } from '@/config';
 import { Logger } from '@/utils/logger';
-import { GeolocationService, BusStopService } from '@/core';
+import {
+    GeolocationService,
+    BusStopService,
+    TrainStationService,
+    TrainDepartureService,
+} from '@/core';
 import { reverseGeocodeToPostcode } from '@/api';
 import { debounce } from '@/utils/helpers';
-import type { Coordinates, Departure, DepartureBoard } from '@/types';
+import type {
+    Coordinates,
+    Departure,
+    DepartureBoard,
+    TrainDeparture,
+    TrainDepartureBoard,
+} from '@/types';
 
 // Store user location for refresh
 let userLocation: Coordinates | null = null;
@@ -124,9 +135,9 @@ function renderDepartureCard(board: DepartureBoard): string {
 }
 
 /**
- * Display all departure boards
+ * Display all items (bus departures and train stations) sorted by distance
  */
-function displayDepartures(boards: DepartureBoard[]): void {
+function displayItems(items: DisplayItem[]): void {
     const container = document.getElementById('departures-container');
     const errorCard = document.getElementById('error-card');
     const refreshContainer = document.getElementById('refresh-container');
@@ -139,8 +150,9 @@ function displayDepartures(boards: DepartureBoard[]): void {
     errorCard.style.display = 'none';
     refreshContainer.style.display = 'block';
 
-    // Render all boards
-    container.innerHTML = boards.map(renderDepartureCard).join('');
+    // Sort by distance and render
+    const sorted = [...items].sort((a, b) => getItemDistance(a) - getItemDistance(b));
+    container.innerHTML = sorted.map(renderDisplayItem).join('');
 }
 
 /**
@@ -163,17 +175,137 @@ function displayError(message: string): void {
 }
 
 /**
- * Fetch and display departures for both directions
+ * Format distance for display
+ */
+function formatDistance(meters: number): string {
+    if (meters >= 1000) {
+        return `${(meters / 1000).toFixed(1)}km away`;
+    }
+    return `${Math.round(meters)}m away`;
+}
+
+/**
+ * Render a single train departure row
+ */
+function renderTrainDeparture(departure: TrainDeparture): string {
+    const timeDisplay = departure.minutesUntil <= 0 ? 'Due' : `${departure.minutesUntil} min`;
+    const sourceIndicator = departure.isRealTime
+        ? '<span class="source-badge realtime">Live</span>'
+        : '<span class="source-badge scheduled">Sched</span>';
+
+    let timeClass = 'time';
+    let statusBadge = '';
+
+    if (departure.status === 'cancelled') {
+        timeClass = 'time cancelled';
+        statusBadge = '<span class="status-badge cancelled">Cancelled</span>';
+    } else if (departure.status === 'delayed') {
+        timeClass = 'time delayed';
+    }
+
+    const platformBadge = departure.platform
+        ? `<span class="platform-badge">Plat ${departure.platform}</span>`
+        : '';
+
+    return `
+        <div class="departure-row train-departure-row">
+            ${platformBadge}
+            <span class="destination">${departure.destination}</span>
+            <span class="time-container">
+                ${statusBadge}
+                ${sourceIndicator}
+                <span class="${timeClass}">${timeDisplay}</span>
+            </span>
+        </div>
+    `;
+}
+
+/**
+ * Render a single train station card with departures
+ */
+function renderTrainStationCard(board: TrainDepartureBoard): string {
+    const { station, departures, lastUpdated, isStale } = board;
+
+    const departuresHtml =
+        departures.length > 0
+            ? departures.map(renderTrainDeparture).join('')
+            : '<p class="no-departures">No upcoming departures</p>';
+
+    const timestamp = new Date(lastUpdated).toLocaleTimeString();
+    const staleIndicator = isStale ? ' (cached)' : '';
+
+    return `
+        <div class="card train-station-card">
+            <div class="stop-header">
+                <h2>${station.name}</h2>
+                <span class="station-badge">${station.crsCode}</span>
+            </div>
+            <p class="distance">${formatDistance(station.distanceMeters)}</p>
+            <div class="departures-list">${departuresHtml}</div>
+            <p class="timestamp">Updated ${timestamp}${staleIndicator}</p>
+        </div>
+    `;
+}
+
+/** Item that can be displayed in the combined list */
+type DisplayItem =
+    | { type: 'bus'; data: DepartureBoard }
+    | { type: 'train'; data: TrainDepartureBoard };
+
+/**
+ * Render a display item (bus or train)
+ */
+function renderDisplayItem(item: DisplayItem): string {
+    if (item.type === 'train') {
+        return renderTrainStationCard(item.data);
+    }
+    return renderDepartureCard(item.data);
+}
+
+/**
+ * Get distance from a display item
+ */
+function getItemDistance(item: DisplayItem): number {
+    if (item.type === 'train') {
+        return item.data.station.distanceMeters;
+    }
+    return item.data.stop.distanceMeters;
+}
+
+/**
+ * Fetch and display departures for both directions, combined with train stations
  */
 async function fetchAndDisplayDepartures(location: Coordinates): Promise<void> {
-    const result = await BusStopService.getBothDirections(location);
+    // Fetch bus and train data in parallel
+    const [busResult, trainResults] = await Promise.all([
+        BusStopService.getBothDirections(location),
+        (async () => {
+            const trainStations = TrainStationService.getStationsByDistance(location);
+            return TrainDepartureService.getDeparturesForAllStations(trainStations);
+        })(),
+    ]);
 
-    if (!result.success) {
-        displayError(result.error.getUserMessage());
+    // Convert train results to display items (only successful ones)
+    const trainItems: DisplayItem[] = trainResults
+        .filter(r => r.success)
+        .map(r => ({
+            type: 'train' as const,
+            data: (r as { success: true; board: TrainDepartureBoard }).board,
+        }));
+
+    if (!busResult.success) {
+        // Still show train departures even if bus data fails
+        if (trainItems.length > 0) {
+            displayItems(trainItems);
+        } else {
+            displayError(busResult.error.getUserMessage());
+        }
         return;
     }
 
-    displayDepartures(result.boards);
+    // Combine bus and train items
+    const busItems: DisplayItem[] = busResult.boards.map(b => ({ type: 'bus', data: b }));
+    displayItems([...busItems, ...trainItems]);
 }
 
 /**
@@ -189,12 +321,30 @@ async function handleRefresh(): Promise<void> {
     }
 
     try {
-        const result = await BusStopService.refreshBothDirections(userLocation);
+        // Refresh bus and train data in parallel
+        const [busResult, trainResults] = await Promise.all([
+            BusStopService.refreshBothDirections(userLocation),
+            (async () => {
+                const trainStations = TrainStationService.getStationsByDistance(userLocation);
+                return TrainDepartureService.refreshDeparturesForAllStations(trainStations);
+            })(),
+        ]);
 
-        if (result.success) {
-            displayDepartures(result.boards);
+        // Convert train results to display items (only successful ones)
+        const trainItems: DisplayItem[] = trainResults
+            .filter(r => r.success)
+            .map(r => ({
+                type: 'train' as const,
+                data: (r as { success: true; board: TrainDepartureBoard }).board,
+            }));
+
+        if (busResult.success) {
+            const busItems: DisplayItem[] = busResult.boards.map(b => ({ type: 'bus', data: b }));
+            displayItems([...busItems, ...trainItems]);
+        } else if (trainItems.length > 0) {
+            displayItems(trainItems);
         } else {
-            displayError(result.error.getUserMessage());
+            displayError(busResult.error.getUserMessage());
         }
     } finally {
         if (refreshBtn) {
@@ -243,7 +393,7 @@ async function init() {
         postcodeDisplay.innerHTML = `<span class="status">${postcode}</span>`;
         Logger.success('Postcode displayed', { postcode });
 
-        // Fetch and display departures for both directions
+        // Fetch and display bus departures + train stations (combined, sorted by distance)
         await fetchAndDisplayDepartures(result.location.coordinates);
 
         // Set up refresh button

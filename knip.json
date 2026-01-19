@@ -1,7 +1,6 @@
 {
-    "entry": ["src/main.ts"],
+    "entry": ["src/main.ts", "src/**/*.test.ts"],
     "project": ["src/**/*.ts"],
-    "ignore": ["**/*.test.ts", "**/*.spec.ts"],
     "paths": {
         "@/*": ["src/*"],
         "@api/*": ["src/api/*"],

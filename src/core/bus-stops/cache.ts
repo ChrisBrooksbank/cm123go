@@ -8,9 +8,10 @@ import { getConfig } from '@config/index';
 import type { BusStop, Departure } from '@/types';
 
 const DB_NAME = 'cm123go-cache';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STOPS_STORE = 'bus-stops';
 const DEPARTURES_STORE = 'departures';
+const TRAIN_DEPARTURES_STORE = 'train-departures';
 
 interface CachedStops {
     id: 'chelmsford-stops';
@@ -49,6 +50,9 @@ function openDatabase(): Promise<IDBDatabase> {
             }
             if (!db.objectStoreNames.contains(DEPARTURES_STORE)) {
                 db.createObjectStore(DEPARTURES_STORE, { keyPath: 'atcoCode' });
+            }
+            if (!db.objectStoreNames.contains(TRAIN_DEPARTURES_STORE)) {
+                db.createObjectStore(TRAIN_DEPARTURES_STORE, { keyPath: 'crsCode' });
             }
         };
     });
