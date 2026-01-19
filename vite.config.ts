@@ -35,6 +35,17 @@ export default defineConfig({
                             },
                         },
                     },
+                    {
+                        urlPattern: /api1\.raildata\.org\.uk/i,
+                        handler: 'NetworkFirst',
+                        options: {
+                            cacheName: 'raildata-cache',
+                            expiration: {
+                                maxEntries: 20,
+                                maxAgeSeconds: 60, // 1 minute for real-time data
+                            },
+                        },
+                    },
                 ],
             },
             manifest: {

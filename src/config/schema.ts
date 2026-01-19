@@ -54,10 +54,14 @@ export const ConfigSchema = z.object({
         .default({}),
     trainStations: z
         .object({
-            /** Huxley2 API URL (National Rail Darwin proxy) */
-            huxleyApiUrl: z.string().url().default('https://huxley2.azurewebsites.net'),
-            /** Huxley access token (from raildata.org.uk) */
-            huxleyAccessToken: z.string().optional(),
+            /** Rail Data Marketplace API URL */
+            railDataApiUrl: z
+                .string()
+                .default(
+                    'https://api1.raildata.org.uk/1010-live-arrival-and-departure-boards-arr-and-dep1_1/LDBWS/api/20220120'
+                ),
+            /** Rail Data Marketplace API key (from raildata.org.uk) */
+            railDataApiKey: z.string().optional(),
             /** Cache TTL for departures in milliseconds (default: 60s) */
             departuresCacheTtl: z.number().positive().default(60000),
             /** Maximum departures to fetch per station */

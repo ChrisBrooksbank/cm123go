@@ -1,9 +1,9 @@
 /**
- * Huxley2 API Client
- * Fetches real-time train departures from National Rail Darwin via Huxley2 proxy
+ * Rail Data Marketplace API Client
+ * Fetches real-time train departures from National Rail Darwin
  *
- * Huxley2 is a JSON proxy for the National Rail Darwin SOAP API.
- * Get a free access token from: https://raildata.org.uk
+ * Get a free API key from: https://raildata.org.uk
+ * Subscribe to "Live Arrival and Departure Boards" product
  */
 
 import { Logger } from '@utils/logger';
@@ -41,7 +41,7 @@ interface HuxleyResponse {
 }
 
 /**
- * Fetch train departures from Huxley2 API for a specific station
+ * Fetch train departures from Rail Data Marketplace API
  * @param crsCode - 3-letter CRS code for the station (e.g., "CHM" for Chelmsford)
  * @param limit - Maximum number of departures to return
  */
@@ -50,27 +50,31 @@ export async function fetchTrainDepartures(
     limit?: number
 ): Promise<TrainDeparture[]> {
     const config = getConfig();
-    const { huxleyApiUrl, huxleyAccessToken, maxDeparturesPerStation } = config.trainStations;
+    const { railDataApiUrl, railDataApiKey, maxDeparturesPerStation } = config.trainStations;
     const numRows = limit ?? maxDeparturesPerStation;
 
-    if (!huxleyAccessToken) {
-        Logger.debug('Huxley access token not configured');
+    if (!railDataApiKey) {
+        Logger.debug('Rail Data API key not configured');
         throw new Error('API_KEY_MISSING');
     }
 
-    const url = `${huxleyApiUrl}/departures/${crsCode}?numRows=${numRows}&accessToken=${huxleyAccessToken}`;
+    const url = `${railDataApiUrl}/GetArrDepBoardWithDetails/${crsCode}?numRows=${numRows}`;
 
     Logger.info('Fetching train departures', { crsCode });
 
     try {
         const response = await resilientFetch<HuxleyResponse>(
-            'huxley',
+            'raildata',
             crsCode,
             async () => {
-                const res = await fetch(url);
+                const res = await fetch(url, {
+                    headers: {
+                        'x-apikey': railDataApiKey,
+                    },
+                });
 
                 if (!res.ok) {
-                    throw new Error(`Huxley API error: ${res.status}`);
+                    throw new Error(`Rail Data API error: ${res.status}`);
                 }
 
                 return res.json() as Promise<HuxleyResponse>;
@@ -78,7 +82,7 @@ export async function fetchTrainDepartures(
             { retry: { maxAttempts: 2, initialDelay: 1000 } }
         );
 
-        Logger.debug('Huxley API response', { crsCode, response });
+        Logger.debug('Rail Data API response', { crsCode, response });
 
         if (!response.trainServices || response.trainServices.length === 0) {
             Logger.debug('No train services found', { crsCode });
@@ -112,7 +116,7 @@ export async function fetchTrainDepartures(
         return departures;
     } catch (error) {
         if (error instanceof CircuitOpenError) {
-            Logger.warn('Huxley circuit open, skipping', {
+            Logger.warn('Rail Data circuit open, skipping', {
                 crsCode,
                 retryAfter: error.retryAfter,
             });
