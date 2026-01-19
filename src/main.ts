@@ -6,7 +6,7 @@ import {
     TrainStationService,
     TrainDepartureService,
 } from '@/core';
-import { reverseGeocodeToPostcode } from '@/api';
+import { reverseGeocodeToPostcode, geocodePostcode } from '@/api';
 import { debounce } from '@/utils/helpers';
 import { getDirectionsUrl } from '@/utils/maps-link';
 import { FavoritesManager } from '@/utils/favorites';
@@ -224,6 +224,21 @@ function displayError(message: string): void {
     refreshContainer.style.display = 'none';
     errorCard.style.display = 'block';
     errorMessage.textContent = message;
+}
+
+/**
+ * Show manual postcode entry form with a message
+ */
+function showPostcodeEntryForm(message: string): void {
+    const postcodeDisplay = document.getElementById('postcode-display');
+    const postcodeForm = document.getElementById('postcode-form');
+
+    if (postcodeDisplay) {
+        postcodeDisplay.textContent = message;
+    }
+    if (postcodeForm) {
+        postcodeForm.style.display = 'block';
+    }
 }
 
 /**
@@ -548,9 +563,38 @@ async function init() {
         const postcodeDisplay = document.getElementById('postcode-display');
         if (!postcodeDisplay) return;
 
+        // Set up manual postcode entry form (early, so it works if geolocation fails)
+        const postcodeForm = document.getElementById('postcode-form') as HTMLFormElement | null;
+        const postcodeInput = document.getElementById('postcode-input') as HTMLInputElement | null;
+
+        if (postcodeForm && postcodeInput) {
+            postcodeForm.addEventListener('submit', async e => {
+                e.preventDefault();
+                const enteredPostcode = postcodeInput.value.trim();
+                if (!enteredPostcode) return;
+
+                postcodeDisplay.textContent = 'Looking up postcode...';
+                postcodeForm.style.display = 'none';
+
+                try {
+                    const { coordinates, normalizedPostcode } =
+                        await geocodePostcode(enteredPostcode);
+                    userLocation = coordinates;
+                    postcodeDisplay.innerHTML = `<span class="status">${normalizedPostcode}</span>`;
+                    await fetchAndDisplayDepartures(coordinates);
+                    // Show refresh button
+                    const refreshContainer = document.getElementById('refresh-container');
+                    if (refreshContainer) refreshContainer.style.display = 'block';
+                } catch (error) {
+                    Logger.error('Manual postcode lookup failed', String(error));
+                    showPostcodeEntryForm('Postcode not found. Try again:');
+                }
+            });
+        }
+
         // Check if geolocation is supported
         if (!GeolocationService.isSupported()) {
-            postcodeDisplay.textContent = 'Geolocation is not supported by your browser';
+            showPostcodeEntryForm('Geolocation not supported. Enter postcode:');
             return;
         }
 
@@ -561,7 +605,7 @@ async function init() {
         const result = await GeolocationService.getLocationFromBrowser();
 
         if (!result.success) {
-            postcodeDisplay.textContent = `Could not get location: ${result.error.message}`;
+            showPostcodeEntryForm('Could not detect location. Enter postcode:');
             return;
         }
 
@@ -571,9 +615,14 @@ async function init() {
         // Reverse geocode to get postcode
         postcodeDisplay.textContent = 'Looking up postcode...';
 
-        const postcode = await reverseGeocodeToPostcode(result.location.coordinates);
-        postcodeDisplay.innerHTML = `<span class="status">${postcode}</span>`;
-        Logger.success('Postcode displayed', { postcode });
+        try {
+            const postcode = await reverseGeocodeToPostcode(result.location.coordinates);
+            postcodeDisplay.innerHTML = `<span class="status">${postcode}</span>`;
+            Logger.success('Postcode displayed', { postcode });
+        } catch (postcodeError) {
+            Logger.warn('Postcode lookup failed, continuing with coordinates', postcodeError);
+            postcodeDisplay.innerHTML = '<span class="status">Location found</span>';
+        }
 
         // Fetch and display bus departures + train stations (combined, sorted by distance)
         await fetchAndDisplayDepartures(result.location.coordinates);
@@ -615,10 +664,7 @@ async function init() {
         }
     } catch (error) {
         Logger.error('Failed to initialize:', String(error));
-        const postcodeDisplay = document.getElementById('postcode-display');
-        if (postcodeDisplay) {
-            postcodeDisplay.textContent = 'Error detecting location';
-        }
+        showPostcodeEntryForm('Location error. Enter postcode:');
     }
 }
 

@@ -373,6 +373,23 @@
             <div class="card">
                 <h2>Your Location</h2>
                 <p id="postcode-display">Detecting your location...</p>
+                <form id="postcode-form" style="display: none; margin-top: 0.75rem">
+                    <div style="display: flex; gap: 0.5rem">
+                        <input
+                            type="text"
+                            id="postcode-input"
+                            placeholder="e.g. CM1 1AB"
+                            style="
+                                flex: 1;
+                                padding: 0.5rem;
+                                border: 1px solid #d1d5db;
+                                border-radius: 6px;
+                                font-size: 1rem;
+                            "
+                        />
+                        <button type="submit" class="refresh-button">Go</button>
+                    </div>
+                </form>
             </div>
 
             <div id="install-banner" class="card install-banner" hidden>

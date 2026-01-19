@@ -4,4 +4,4 @@
  */
 
 // Geocoding API (postcodes.io)
-export { reverseGeocodeToPostcode } from './geocoding';
+export { reverseGeocodeToPostcode, geocodePostcode } from './geocoding';
