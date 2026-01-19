@@ -78,10 +78,10 @@ export async function fetchFirstBusDepartures(atcoCode: string, limit = 3): Prom
         // Log raw response for debugging
         Logger.debug('First Bus API response', { response });
 
-        // Check for API errors
+        // Note: API often returns error field even when data is present
+        // Only log the error, don't short-circuit if we might have data
         if (response.error) {
-            Logger.debug('First Bus API error', { error: response.error, atcoCode });
-            return [];
+            Logger.debug('First Bus API warning', { error: response.error, atcoCode });
         }
 
         // Try TransportAPI format first (departures.all)
