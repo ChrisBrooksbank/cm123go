@@ -318,6 +318,51 @@
                 color: #9ca3af;
                 font-size: 0.875rem;
             }
+            /* Favorite button - subtle text style */
+            .favorite-btn {
+                background: transparent;
+                border: 1px solid #d1d5db;
+                border-radius: 4px;
+                font-size: 0.75rem;
+                color: #6b7280;
+                cursor: pointer;
+                padding: 0.25rem 0.5rem;
+                margin-left: auto;
+                transition: all 0.15s ease;
+            }
+            .favorite-btn:hover {
+                background: #f3f4f6;
+                border-color: #9ca3af;
+            }
+            .favorite-btn.active {
+                background: #fef3c7;
+                border-color: #f59e0b;
+                color: #b45309;
+            }
+            /* Show more stops link */
+            .show-more-container {
+                text-align: center;
+                margin: 1rem 0;
+            }
+            .show-more-btn {
+                background: transparent;
+                border: 1px solid #d1d5db;
+                color: #6b7280;
+                padding: 0.75rem 1.5rem;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 0.875rem;
+                transition: all 0.15s ease;
+            }
+            .show-more-btn:hover {
+                background: #f3f4f6;
+                border-color: #9ca3af;
+                color: #374151;
+            }
+            .show-more-btn:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
         </style>
     </head>
     <body>

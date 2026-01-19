@@ -395,6 +395,21 @@ export const BusStopService = {
     },
 
     /**
+     * Get expanded list of stops (for "Show more" feature)
+     * Returns stops not already displayed, up to maxResults
+     */
+    async getExpandedStops(
+        location: Coordinates,
+        excludeAtcoCodes: string[],
+        maxResults = 6
+    ): Promise<NearbyBusStop[]> {
+        const nearbyStops = await this.findNearest(location, 100);
+        const excludeSet = new Set(excludeAtcoCodes);
+
+        return nearbyStops.filter(stop => !excludeSet.has(stop.atcoCode)).slice(0, maxResults);
+    },
+
+    /**
      * Refresh departures for both directions (4 stops total)
      */
     async refreshBothDirections(location: Coordinates): Promise<BothDirectionsResult> {
