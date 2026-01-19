@@ -54,6 +54,38 @@ function getOppositeBearing(bearing: string | undefined): string | undefined {
 }
 
 /**
+ * Removes redundant stops going the same direction that share bus lines.
+ * Keeps the nearest stop when duplicates are found.
+ * Logic: if the same bus serves both stops, showing it twice is redundant.
+ */
+function deduplicateBySharedLines(boards: DepartureBoard[]): DepartureBoard[] {
+    const result: DepartureBoard[] = [];
+
+    for (const board of boards) {
+        const lines = new Set(board.departures.map(d => d.line));
+
+        // Check if we already have a stop with same bearing that shares any lines
+        const isDuplicate = result.some(existing => {
+            // Must be same direction
+            if (existing.stop.bearing !== board.stop.bearing) return false;
+
+            // Check if any lines overlap
+            const existingLines = new Set(existing.departures.map(d => d.line));
+            for (const line of lines) {
+                if (existingLines.has(line)) return true; // Found shared line
+            }
+            return false;
+        });
+
+        if (!isDuplicate) {
+            result.push(board);
+        }
+    }
+
+    return result;
+}
+
+/**
  * BusStopService - Find nearest stops and departures
  */
 export const BusStopService = {
@@ -64,12 +96,12 @@ export const BusStopService = {
     async init(): Promise<void> {
         const cached = await BusStopCache.getStops();
         if (cached && cached.length > 0) {
-            Logger.info('Bus stops loaded from cache', { count: cached.length });
+            Logger.debug('Bus stops loaded from cache', { count: cached.length });
             return;
         }
 
         try {
-            Logger.info('Fetching bus stops from NAPTAN...');
+            Logger.debug('Fetching bus stops from NAPTAN...');
             const stops = await fetchChelmsfordBusStops();
             await BusStopCache.setStops(stops);
             Logger.success('Bus stops cached', { count: stops.length });
@@ -218,11 +250,11 @@ export const BusStopService = {
      * Returns 2 stops per direction (4 total) - nearest and next nearest for each
      */
     async getBothDirections(location: Coordinates): Promise<BothDirectionsResult> {
-        Logger.info('Getting departures for both directions', { location });
+        Logger.debug('Getting departures for both directions', { location });
         try {
             // Get many nearby stops to find multiple in each direction
             const nearbyStops = await this.findNearest(location, 50);
-            Logger.info('Found nearby stops', { count: nearbyStops.length });
+            Logger.debug('Found nearby stops', { count: nearbyStops.length });
 
             if (nearbyStops.length === 0) {
                 throw new BusStopError(
@@ -283,11 +315,17 @@ export const BusStopService = {
 
             // Return success if at least one stop succeeded
             if (boards.length > 0) {
-                return {
-                    success: true,
-                    boards,
-                    partialFailures: partialFailures.length > 0 ? partialFailures : undefined,
-                };
+                // Filter out stops with no departures, then deduplicate nearby stops with same lines
+                const filteredBoards = boards.filter(b => b.departures.length > 0);
+                const deduplicatedBoards = deduplicateBySharedLines(filteredBoards);
+
+                if (deduplicatedBoards.length > 0) {
+                    return {
+                        success: true,
+                        boards: deduplicatedBoards,
+                        partialFailures: partialFailures.length > 0 ? partialFailures : undefined,
+                    };
+                }
             }
 
             // All failed
