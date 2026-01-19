@@ -8,6 +8,32 @@ import type { Coordinates, Departure, DepartureBoard } from '@/types';
 // Store user location for refresh
 let userLocation: Coordinates | null = null;
 
+// PWA install prompt
+interface BeforeInstallPromptEvent extends Event {
+    prompt(): Promise<void>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+let deferredPrompt: BeforeInstallPromptEvent | null = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e as BeforeInstallPromptEvent;
+    const installBtn = document.getElementById('install-btn');
+    if (installBtn) {
+        installBtn.hidden = false;
+    }
+});
+
+window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    const installBtn = document.getElementById('install-btn');
+    if (installBtn) {
+        installBtn.hidden = true;
+    }
+    Logger.success('App installed');
+});
+
 /**
  * Get bearing direction label
  */
@@ -205,6 +231,19 @@ async function init() {
         const refreshBtn = document.getElementById('refresh-btn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', debounce(handleRefresh, 1000));
+        }
+
+        // Set up install button
+        const installBtn = document.getElementById('install-btn');
+        if (installBtn) {
+            installBtn.addEventListener('click', async () => {
+                if (!deferredPrompt) return;
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                Logger.info(`Install prompt outcome: ${outcome}`);
+                deferredPrompt = null;
+                installBtn.hidden = true;
+            });
         }
     } catch (error) {
         Logger.error('Failed to initialize:', String(error));
