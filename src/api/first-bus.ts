@@ -10,17 +10,26 @@ import { Logger } from '@utils/logger';
 import { retryWithBackoff } from '@utils/helpers';
 import type { Departure } from '@/types';
 
-/** First Bus API response structure */
+/** First Bus API response structure (TransportAPI format) */
 interface FirstBusDeparture {
-    due: string;
-    service_ref: string;
-    service_number: string;
-    destination: string;
-    is_live: boolean;
+    mode: string;
+    line: string;
+    line_name: string;
+    direction: string;
+    operator: string;
+    operator_name: string;
+    aimed_departure_time: string;
+    expected_departure_time: string | null;
+    best_departure_estimate: string;
+    dir: string;
+    source: string;
 }
 
 interface FirstBusResponse {
-    times?: FirstBusDeparture[];
+    departures?: {
+        all?: FirstBusDeparture[];
+        [key: string]: FirstBusDeparture[] | undefined;
+    };
     atcocode?: string;
 }
 
@@ -33,7 +42,8 @@ const FIRST_BUS_API_PATH = '/api/firstbus';
  * @param limit - Maximum number of departures to return
  */
 export async function fetchFirstBusDepartures(atcoCode: string, limit = 3): Promise<Departure[]> {
-    const url = `${FIRST_BUS_API_PATH}/getNextBus?stop=${atcoCode}`;
+    // First Bus redirects /getNextBus to /api/get-next-bus
+    const url = `${FIRST_BUS_API_PATH}/api/get-next-bus?stop=${atcoCode}`;
 
     Logger.info('Fetching First Bus departures', { atcoCode });
 
@@ -52,22 +62,38 @@ export async function fetchFirstBusDepartures(atcoCode: string, limit = 3): Prom
             1000
         );
 
+        // Log raw response for debugging
+        Logger.debug('First Bus API response', { response });
+
         // Check if response has valid data
-        if (!response.times || !response.atcocode) {
+        if (!response.departures || !response.atcocode) {
             Logger.debug('No First Bus departures found', { atcoCode });
             return [];
         }
 
+        // Get all departures from the response (they're grouped by line)
+        const allDepartures: FirstBusDeparture[] = response.departures.all || [];
+
+        if (allDepartures.length === 0) {
+            Logger.debug('No departures in response', { atcoCode });
+            return [];
+        }
+
         // Convert to our Departure format
-        const departures: Departure[] = response.times.slice(0, limit).map(dep => ({
-            line: dep.service_number,
-            destination: dep.destination,
-            expectedDeparture: dep.due,
-            minutesUntil: calculateMinutesUntil(dep.due),
-            status: 'on-time' as const,
-            operatorName: 'First Bus',
-            isRealTime: dep.is_live,
-        }));
+        const departures: Departure[] = allDepartures.slice(0, limit).map(dep => {
+            const isRealTime = dep.expected_departure_time !== null;
+            const departureTime = dep.best_departure_estimate || dep.aimed_departure_time;
+
+            return {
+                line: dep.line_name || dep.line,
+                destination: dep.direction,
+                expectedDeparture: departureTime,
+                minutesUntil: calculateMinutesUntil(departureTime),
+                status: 'on-time' as const,
+                operatorName: dep.operator_name || 'First Bus',
+                isRealTime,
+            };
+        });
 
         Logger.info('Fetched First Bus departures', {
             atcoCode,
