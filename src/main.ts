@@ -223,13 +223,17 @@ function renderTrainDeparture(departure: TrainDeparture): string {
 /**
  * Render a single train station card with departures
  */
-function renderTrainStationCard(board: TrainDepartureBoard): string {
+function renderTrainStationCard(board: TrainDepartureBoard, errorMessage?: string): string {
     const { station, departures, lastUpdated, isStale } = board;
 
-    const departuresHtml =
-        departures.length > 0
-            ? departures.map(renderTrainDeparture).join('')
-            : '<p class="no-departures">No upcoming departures</p>';
+    let departuresHtml: string;
+    if (errorMessage) {
+        departuresHtml = `<p class="no-departures error-message">${errorMessage}</p>`;
+    } else if (departures.length > 0) {
+        departuresHtml = departures.map(renderTrainDeparture).join('');
+    } else {
+        departuresHtml = '<p class="no-departures">No upcoming departures</p>';
+    }
 
     const timestamp = new Date(lastUpdated).toLocaleTimeString();
     const staleIndicator = isStale ? ' (cached)' : '';
@@ -250,14 +254,14 @@ function renderTrainStationCard(board: TrainDepartureBoard): string {
 /** Item that can be displayed in the combined list */
 type DisplayItem =
     | { type: 'bus'; data: DepartureBoard }
-    | { type: 'train'; data: TrainDepartureBoard };
+    | { type: 'train'; data: TrainDepartureBoard; errorMessage?: string };
 
 /**
  * Render a display item (bus or train)
  */
 function renderDisplayItem(item: DisplayItem): string {
     if (item.type === 'train') {
-        return renderTrainStationCard(item.data);
+        return renderTrainStationCard(item.data, item.errorMessage);
     }
     return renderDepartureCard(item.data);
 }
@@ -276,22 +280,35 @@ function getItemDistance(item: DisplayItem): number {
  * Fetch and display departures for both directions, combined with train stations
  */
 async function fetchAndDisplayDepartures(location: Coordinates): Promise<void> {
+    // Get train stations first so we can reference them for error cases
+    const trainStations = TrainStationService.getStationsByDistance(location);
+
     // Fetch bus and train data in parallel
     const [busResult, trainResults] = await Promise.all([
         BusStopService.getBothDirections(location),
-        (async () => {
-            const trainStations = TrainStationService.getStationsByDistance(location);
-            return TrainDepartureService.getDeparturesForAllStations(trainStations);
-        })(),
+        TrainDepartureService.getDeparturesForAllStations(trainStations),
     ]);
 
-    // Convert train results to display items (only successful ones)
-    const trainItems: DisplayItem[] = trainResults
-        .filter(r => r.success)
-        .map(r => ({
+    // Convert train results to display items (include both successful and failed)
+    const trainItems: DisplayItem[] = trainResults.map((r, index) => {
+        if (r.success) {
+            return {
+                type: 'train' as const,
+                data: r.board,
+            };
+        }
+        // Create a placeholder board for failed stations
+        return {
             type: 'train' as const,
-            data: (r as { success: true; board: TrainDepartureBoard }).board,
-        }));
+            data: {
+                station: trainStations[index],
+                departures: [],
+                lastUpdated: Date.now(),
+                isStale: false,
+            },
+            errorMessage: r.error.getUserMessage(),
+        };
+    });
 
     if (!busResult.success) {
         // Still show train departures even if bus data fails
@@ -321,22 +338,35 @@ async function handleRefresh(): Promise<void> {
     }
 
     try {
+        // Get train stations first so we can reference them for error cases
+        const trainStations = TrainStationService.getStationsByDistance(userLocation);
+
         // Refresh bus and train data in parallel
         const [busResult, trainResults] = await Promise.all([
             BusStopService.refreshBothDirections(userLocation),
-            (async () => {
-                const trainStations = TrainStationService.getStationsByDistance(userLocation);
-                return TrainDepartureService.refreshDeparturesForAllStations(trainStations);
-            })(),
+            TrainDepartureService.refreshDeparturesForAllStations(trainStations),
         ]);
 
-        // Convert train results to display items (only successful ones)
-        const trainItems: DisplayItem[] = trainResults
-            .filter(r => r.success)
-            .map(r => ({
+        // Convert train results to display items (include both successful and failed)
+        const trainItems: DisplayItem[] = trainResults.map((r, index) => {
+            if (r.success) {
+                return {
+                    type: 'train' as const,
+                    data: r.board,
+                };
+            }
+            // Create a placeholder board for failed stations
+            return {
                 type: 'train' as const,
-                data: (r as { success: true; board: TrainDepartureBoard }).board,
-            }));
+                data: {
+                    station: trainStations[index],
+                    departures: [],
+                    lastUpdated: Date.now(),
+                    isStale: false,
+                },
+                errorMessage: r.error.getUserMessage(),
+            };
+        });
 
         if (busResult.success) {
             const busItems: DisplayItem[] = busResult.boards.map(b => ({ type: 'bus', data: b }));

@@ -54,8 +54,8 @@ export async function fetchTrainDepartures(
     const numRows = limit ?? maxDeparturesPerStation;
 
     if (!huxleyAccessToken) {
-        Logger.warn('Huxley access token not configured - train departures unavailable');
-        return [];
+        Logger.debug('Huxley access token not configured');
+        throw new Error('API_KEY_MISSING');
     }
 
     const url = `${huxleyApiUrl}/departures/${crsCode}?numRows=${numRows}&accessToken=${huxleyAccessToken}`;

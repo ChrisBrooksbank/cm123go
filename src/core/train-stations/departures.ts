@@ -56,12 +56,19 @@ export const TrainDepartureService = {
                 },
             };
         } catch (error) {
-            Logger.error('Failed to get train departures', { crsCode, error });
+            const isApiKeyMissing = error instanceof Error && error.message === 'API_KEY_MISSING';
+            if (!isApiKeyMissing) {
+                Logger.error('Failed to get train departures', { crsCode, error });
+            }
             return {
                 success: false,
                 error: new TrainStationError(
-                    `Failed to fetch departures for ${station.name}`,
-                    1 as typeof TrainStationErrorCode.DEPARTURES_UNAVAILABLE,
+                    isApiKeyMissing
+                        ? 'Train API key not configured'
+                        : `Failed to fetch departures for ${station.name}`,
+                    isApiKeyMissing
+                        ? (3 as typeof TrainStationErrorCode.API_KEY_MISSING)
+                        : (1 as typeof TrainStationErrorCode.DEPARTURES_UNAVAILABLE),
                     error instanceof Error ? error : undefined
                 ),
             };
@@ -90,12 +97,19 @@ export const TrainDepartureService = {
                 },
             };
         } catch (error) {
-            Logger.error('Failed to refresh train departures', { crsCode, error });
+            const isApiKeyMissing = error instanceof Error && error.message === 'API_KEY_MISSING';
+            if (!isApiKeyMissing) {
+                Logger.error('Failed to refresh train departures', { crsCode, error });
+            }
             return {
                 success: false,
                 error: new TrainStationError(
-                    `Failed to refresh departures for ${station.name}`,
-                    1 as typeof TrainStationErrorCode.DEPARTURES_UNAVAILABLE,
+                    isApiKeyMissing
+                        ? 'Train API key not configured'
+                        : `Failed to refresh departures for ${station.name}`,
+                    isApiKeyMissing
+                        ? (3 as typeof TrainStationErrorCode.API_KEY_MISSING)
+                        : (1 as typeof TrainStationErrorCode.DEPARTURES_UNAVAILABLE),
                     error instanceof Error ? error : undefined
                 ),
             };
