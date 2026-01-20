@@ -184,5 +184,14 @@ function calculateMinutesUntil(timeStr: string): number {
     }
 
     const diffMs = departureDate.getTime() - now.getTime();
-    return Math.max(0, Math.round(diffMs / 60000));
+    const mins = Math.max(0, Math.round(diffMs / 60000));
+
+    // Sanity check: departure boards don't show trains 3+ hours away
+    // If we calculate > 180 min, it's likely a date calculation error
+    if (mins > 180) {
+        Logger.debug('Suspicious train time calculation', { timeStr, mins });
+        return 0;
+    }
+
+    return mins;
 }

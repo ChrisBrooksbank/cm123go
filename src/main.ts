@@ -27,6 +27,18 @@ let hasReachedMaxRadius = false;
 let displayedAtcoCodes: string[] = [];
 let allDisplayItems: DisplayItem[] = [];
 
+/**
+ * Check if coordinates are within the Chelmsford service area
+ * Returns false if user appears far from Chelmsford (e.g., VPN user)
+ */
+function isWithinChelmsfordArea(coordinates: Coordinates): boolean {
+    const config = getConfig();
+    const { chelmsfordCenter, maxDistanceFromCenter } = config.busStops;
+    const distance = GeolocationService.calculateDistance(coordinates, chelmsfordCenter);
+    Logger.debug('Distance from Chelmsford', { distance: Math.round(distance) });
+    return distance <= maxDistanceFromCenter;
+}
+
 // PWA install prompt
 interface BeforeInstallPromptEvent extends Event {
     prompt(): Promise<void>;
@@ -771,6 +783,13 @@ async function init() {
 
         if (!result.success) {
             showPostcodeEntryForm('Could not detect location. Enter postcode:');
+            return;
+        }
+
+        // Check if user appears far from Chelmsford (likely VPN user)
+        if (!isWithinChelmsfordArea(result.location.coordinates)) {
+            Logger.info('User far from Chelmsford, requesting postcode');
+            showPostcodeEntryForm('Please enter a Chelmsford postcode to find nearby stops:');
             return;
         }
 

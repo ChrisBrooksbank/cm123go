@@ -29,6 +29,11 @@ describe('geocoding', () => {
                     east: 0.55,
                     west: 0.4,
                 },
+                chelmsfordCenter: {
+                    latitude: 51.7361,
+                    longitude: 0.469,
+                },
+                maxDistanceFromCenter: 10000,
             },
             trainStations: {
                 railDataApiUrl:

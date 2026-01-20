@@ -54,6 +54,15 @@ export const ConfigSchema = z.object({
                     west: z.number().default(0.4),
                 })
                 .default({}),
+            /** Chelmsford center coordinates for distance checking */
+            chelmsfordCenter: z
+                .object({
+                    latitude: z.number().default(51.7361),
+                    longitude: z.number().default(0.469),
+                })
+                .default({}),
+            /** Maximum distance from Chelmsford center before requiring postcode (meters) */
+            maxDistanceFromCenter: z.number().positive().default(10000),
         })
         .default({}),
     trainStations: z
