@@ -98,7 +98,7 @@ function renderDepartureCard(board: DepartureBoard): string {
                 ${bearingBadge}
                 <button class="${favoriteClass}" data-atco-code="${board.stop.atcoCode}" aria-pressed="${favoriteAriaPressed}" aria-label="${favoriteAriaLabel}">${favoriteText}</button>
             </div>
-            <p class="distance">${Math.round(board.stop.distanceMeters)}m away <a href="${directionsUrl}" class="directions-link" target="_blank" rel="noopener" aria-label="Walking directions to this stop">🚶 Walk</a></p>
+            <p class="distance">${formatDistance(board.stop.distanceMeters)} <a href="${directionsUrl}" class="directions-link" target="_blank" rel="noopener" aria-label="Walking directions to this stop">🚶 Walk</a></p>
             <div class="departures-list">${departuresHtml}</div>
             <p class="timestamp">Updated ${timestamp}${staleIndicator}</p>
         </div>
