@@ -336,27 +336,14 @@ export function setupAllHandlers(): void {
 }
 
 /**
- * Set up click handler on postcode display to allow manual location change
+ * Set up click handler on change location button to allow manual location change
  */
 export function setupPostcodeDisplayClickHandler(): void {
-    const postcodeDisplay = document.getElementById('postcode-display');
+    const changeLocationBtn = document.getElementById('change-location-btn');
 
-    if (postcodeDisplay) {
-        postcodeDisplay.style.cursor = 'pointer';
-
-        const handleActivate = () => {
+    if (changeLocationBtn) {
+        changeLocationBtn.addEventListener('click', () => {
             showPostcodeEntryForm('Enter a new postcode:');
-        };
-
-        // Click handler
-        postcodeDisplay.addEventListener('click', handleActivate);
-
-        // Keyboard handler for accessibility
-        postcodeDisplay.addEventListener('keydown', (e: KeyboardEvent) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handleActivate();
-            }
         });
     }
 }
