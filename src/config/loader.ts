@@ -19,7 +19,7 @@ export async function loadConfig(path = '/app.config.json'): Promise<AppConfig> 
             throw new Error(`Failed to load config: ${response.status}`);
         }
 
-        const rawConfig = await response.json();
+        const rawConfig: unknown = await response.json();
         const result = ConfigSchema.safeParse(rawConfig);
 
         if (!result.success) {

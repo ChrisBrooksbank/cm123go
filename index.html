@@ -273,7 +273,9 @@
                 cursor: pointer;
                 font-size: 0.875rem;
                 font-weight: 500;
-                transition: background-color 0.15s ease, transform 0.1s ease;
+                transition:
+                    background-color 0.15s ease,
+                    transform 0.1s ease;
             }
             .refresh-button:hover {
                 background: var(--color-primary-hover);
@@ -507,16 +509,46 @@
         <main id="app">
             <div class="card">
                 <h2>Your Location</h2>
-                <p id="postcode-display" role="button" tabindex="0" aria-label="Click to change location">Detecting your location...</p>
-                <form id="postcode-form" style="display: none; margin-top: 0.75rem">
-                    <label for="postcode-input" class="visually-hidden">Enter UK postcode</label>
+                <p
+                    id="postcode-display"
+                    role="button"
+                    tabindex="0"
+                    aria-label="Click to change location"
+                >
+                    Detecting your location...
+                </p>
+                <form
+                    id="postcode-form"
+                    style="display: none; margin-top: 0.75rem"
+                    aria-describedby="postcode-form-desc"
+                >
+                    <p id="postcode-form-desc" class="visually-hidden">
+                        Enter your UK postcode to find nearby bus stops
+                    </p>
+                    <label
+                        for="postcode-input"
+                        style="
+                            display: block;
+                            font-size: 0.875rem;
+                            margin-bottom: 0.25rem;
+                            color: var(--color-text-muted);
+                        "
+                        >Enter UK postcode</label
+                    >
                     <div style="display: flex; gap: 0.5rem">
                         <input
                             type="text"
                             id="postcode-input"
                             placeholder="e.g. CM1 1AB"
                             aria-describedby="postcode-error"
+                            aria-required="true"
+                            aria-invalid="false"
                             autocomplete="postal-code"
+                            autocorrect="off"
+                            autocapitalize="characters"
+                            spellcheck="false"
+                            maxlength="8"
+                            pattern="[A-Za-z]{1,2}[0-9][0-9A-Za-z]?\s?[0-9][A-Za-z]{2}"
                             style="
                                 flex: 1;
                                 padding: 0.5rem;
@@ -525,9 +557,21 @@
                                 font-size: 1rem;
                             "
                         />
-                        <button type="submit" class="refresh-button" aria-label="Submit postcode">Go</button>
+                        <button type="submit" class="refresh-button" aria-label="Find nearby stops">
+                            Find stops
+                        </button>
                     </div>
-                    <p id="postcode-error" class="visually-hidden" role="alert" aria-live="assertive"></p>
+                    <p
+                        id="postcode-error"
+                        role="alert"
+                        aria-live="assertive"
+                        style="
+                            color: var(--color-error, #dc2626);
+                            font-size: 0.875rem;
+                            margin-top: 0.5rem;
+                            display: none;
+                        "
+                    ></p>
                 </form>
             </div>
 
@@ -545,16 +589,39 @@
                 </div>
             </div>
 
-            <div id="departures-container" aria-live="polite" aria-atomic="false" tabindex="-1"></div>
+            <div
+                id="departures-container"
+                aria-live="polite"
+                aria-atomic="false"
+                tabindex="-1"
+            ></div>
 
             <!-- Hidden live region for status announcements -->
-            <div id="status-announcer" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
+            <div
+                id="status-announcer"
+                class="visually-hidden"
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+            ></div>
 
             <div id="refresh-container" style="display: none; text-align: center; margin-top: 1rem">
-                <button id="refresh-btn" class="refresh-button" aria-label="Refresh all departure times">Refresh All</button>
+                <button
+                    id="refresh-btn"
+                    class="refresh-button"
+                    aria-label="Refresh all departure times"
+                >
+                    Refresh All
+                </button>
             </div>
 
-            <div class="card" id="error-card" style="display: none" role="alert" aria-live="assertive">
+            <div
+                class="card"
+                id="error-card"
+                style="display: none"
+                role="alert"
+                aria-live="assertive"
+            >
                 <p id="error-message" class="error-message"></p>
             </div>
         </main>

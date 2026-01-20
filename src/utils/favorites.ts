@@ -20,7 +20,10 @@ export const FavoritesManager = {
     getAll(): FavoriteStop[] {
         try {
             const raw = localStorage.getItem(FAVORITES_KEY);
-            return raw ? JSON.parse(raw) : [];
+            if (!raw) return [];
+            const parsed: unknown = JSON.parse(raw);
+            if (!Array.isArray(parsed)) return [];
+            return parsed as FavoriteStop[];
         } catch {
             return [];
         }

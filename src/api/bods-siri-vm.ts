@@ -33,6 +33,7 @@ function createBoundingBox(center: Coordinates, radiusMeters: number): BoundingB
 /**
  * Parse SIRI-VM XML response to extract vehicle activities
  */
+// eslint-disable-next-line complexity -- XML parsing with many optional fields has inherent complexity
 function parseSiriVmResponse(xmlText: string): VehicleActivity[] {
     const parser = new DOMParser();
     const doc = parser.parseFromString(xmlText, 'text/xml');
@@ -174,22 +175,4 @@ export async function fetchVehiclesNear(
     const radius = radiusMeters ?? config.busStops.vehicleSearchRadius;
     const boundingBox = createBoundingBox(center, radius);
     return fetchVehiclePositions(boundingBox);
-}
-
-/**
- * Calculate distance between two coordinates in meters (Haversine formula)
- */
-export function calculateDistance(coord1: Coordinates, coord2: Coordinates): number {
-    const R = 6371000; // Earth radius in meters
-    const lat1Rad = (coord1.latitude * Math.PI) / 180;
-    const lat2Rad = (coord2.latitude * Math.PI) / 180;
-    const deltaLat = ((coord2.latitude - coord1.latitude) * Math.PI) / 180;
-    const deltaLon = ((coord2.longitude - coord1.longitude) * Math.PI) / 180;
-
-    const a =
-        Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
-        Math.cos(lat1Rad) * Math.cos(lat2Rad) * Math.sin(deltaLon / 2) * Math.sin(deltaLon / 2);
-
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
 }

@@ -26,7 +26,7 @@ function openDatabase(): Promise<IDBDatabase> {
 
         request.onerror = () => {
             Logger.error('Failed to open IndexedDB', request.error);
-            reject(request.error);
+            reject(new Error(request.error?.message ?? 'Failed to open IndexedDB'));
         };
 
         request.onsuccess = () => {
@@ -58,7 +58,7 @@ export const TrainStationCache = {
             const config = getConfig();
             const ttl = config.trainStations.departuresCacheTtl;
 
-            return new Promise(resolve => {
+            return await new Promise(resolve => {
                 const transaction = db.transaction(TRAIN_DEPARTURES_STORE, 'readonly');
                 const store = transaction.objectStore(TRAIN_DEPARTURES_STORE);
                 const request = store.get(crsCode);
@@ -102,7 +102,7 @@ export const TrainStationCache = {
         try {
             const db = await openDatabase();
 
-            return new Promise((resolve, reject) => {
+            return await new Promise((resolve, reject) => {
                 const transaction = db.transaction(TRAIN_DEPARTURES_STORE, 'readwrite');
                 const store = transaction.objectStore(TRAIN_DEPARTURES_STORE);
 
@@ -121,7 +121,7 @@ export const TrainStationCache = {
 
                 request.onerror = () => {
                     Logger.warn('Failed to cache train departures', request.error);
-                    reject(request.error);
+                    reject(new Error(request.error?.message ?? 'Failed to cache train departures'));
                 };
             });
         } catch (error) {
@@ -136,7 +136,7 @@ export const TrainStationCache = {
         try {
             const db = await openDatabase();
 
-            return new Promise(resolve => {
+            return await new Promise(resolve => {
                 const transaction = db.transaction(TRAIN_DEPARTURES_STORE, 'readwrite');
                 transaction.objectStore(TRAIN_DEPARTURES_STORE).clear();
 

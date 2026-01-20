@@ -22,13 +22,13 @@ const BusStopsArraySchema = z.array(BusStopSchema);
 export async function fetchChelmsfordBusStops(): Promise<BusStop[]> {
     Logger.info('Loading Chelmsford bus stops from local data');
 
-    const stops = await retryWithBackoff(
+    const stops: unknown = await retryWithBackoff(
         async () => {
             const res = await fetch('/bus-stops.min.json');
             if (!res.ok) {
                 throw new Error(`Failed to load bus stops: ${res.status}`);
             }
-            return res.json();
+            return res.json() as Promise<unknown>;
         },
         3,
         1000

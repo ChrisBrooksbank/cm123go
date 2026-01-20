@@ -8,6 +8,7 @@
 
 import { Logger } from '@utils/logger';
 import { resilientFetch, CircuitOpenError } from '@utils/helpers';
+import { calculateMinutesUntil } from '@utils/time';
 import type { Departure } from '@/types';
 
 /** First Bus API response - TransportAPI format (departures.all) */
@@ -146,40 +147,4 @@ export async function fetchFirstBusDepartures(atcoCode: string, limit = 3): Prom
         Logger.warn('Failed to fetch First Bus departures', { atcoCode, error });
         return [];
     }
-}
-
-/**
- * Calculate minutes until departure from a time string
- * First Bus returns times like "10:30" or "Due"
- */
-function calculateMinutesUntil(timeStr: string): number {
-    if (!timeStr || timeStr.toLowerCase() === 'due') {
-        return 0;
-    }
-
-    // Handle "X mins" format
-    const minsMatch = timeStr.match(/(\d+)\s*min/i);
-    if (minsMatch) {
-        return parseInt(minsMatch[1], 10);
-    }
-
-    // Handle "HH:MM" format
-    const timeMatch = timeStr.match(/^(\d{1,2}):(\d{2})$/);
-    if (timeMatch) {
-        const now = new Date();
-        const [hours, minutes] = [parseInt(timeMatch[1], 10), parseInt(timeMatch[2], 10)];
-
-        const departureDate = new Date();
-        departureDate.setHours(hours, minutes, 0, 0);
-
-        // If the time is earlier than now, assume it's tomorrow
-        if (departureDate < now) {
-            departureDate.setDate(departureDate.getDate() + 1);
-        }
-
-        const diffMs = departureDate.getTime() - now.getTime();
-        return Math.max(0, Math.round(diffMs / 60000));
-    }
-
-    return 0;
 }

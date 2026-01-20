@@ -16,17 +16,11 @@ async function generateIcons() {
     const svgBuffer = Buffer.from(svgContent);
 
     // Generate 192x192 icon
-    await sharp(svgBuffer)
-        .resize(192, 192)
-        .png()
-        .toFile(join(iconsDir, 'icon-192.png'));
+    await sharp(svgBuffer).resize(192, 192).png().toFile(join(iconsDir, 'icon-192.png'));
     console.log('Generated icon-192.png');
 
     // Generate 512x512 icon
-    await sharp(svgBuffer)
-        .resize(512, 512)
-        .png()
-        .toFile(join(iconsDir, 'icon-512.png'));
+    await sharp(svgBuffer).resize(512, 512).png().toFile(join(iconsDir, 'icon-512.png'));
     console.log('Generated icon-512.png');
 
     console.log('Done!');

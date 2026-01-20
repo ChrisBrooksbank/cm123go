@@ -7,9 +7,11 @@
  */
 
 import { Logger } from '@utils/logger';
+import { parseTimeToDate, formatTimeHHMM } from '@utils/time';
 import { fetchFirstBusDepartures } from '@api/first-bus';
-import { fetchVehiclesNear, calculateDistance } from '@api/bods-siri-vm';
+import { fetchVehiclesNear } from '@api/bods-siri-vm';
 import { getScheduledDepartures, isGTFSDataAvailable } from '@api/bods-gtfs';
+import { GeolocationService } from '@core/geolocation';
 import type { Departure, Coordinates, VehicleActivity, BusStop } from '@/types';
 
 /** Average bus speed for ETA calculations (meters per second) */
@@ -123,7 +125,7 @@ function findMatchingVehicle(
         // Match by line reference
         if (normalizeLineRef(vehicle.lineRef) === normalizeLineRef(scheduled.line)) {
             // Check if vehicle is approaching (within reasonable distance)
-            const distance = calculateDistance(
+            const distance = GeolocationService.calculateDistance(
                 { latitude: vehicle.latitude, longitude: vehicle.longitude },
                 stopCoords
             );
@@ -141,7 +143,7 @@ function findMatchingVehicle(
  * Calculate ETA based on vehicle position and distance to stop
  */
 function calculateETAFromVehicle(vehicle: VehicleActivity, stopCoords: Coordinates): Date {
-    const distance = calculateDistance(
+    const distance = GeolocationService.calculateDistance(
         { latitude: vehicle.latitude, longitude: vehicle.longitude },
         stopCoords
     );
@@ -178,11 +180,11 @@ async function getRealTimeOnlyDepartures(
                 vehiclesByLine.set(line, vehicle);
             } else {
                 // Keep the closer vehicle
-                const existingDistance = calculateDistance(
+                const existingDistance = GeolocationService.calculateDistance(
                     { latitude: existing.latitude, longitude: existing.longitude },
                     stopCoords
                 );
-                const newDistance = calculateDistance(
+                const newDistance = GeolocationService.calculateDistance(
                     { latitude: vehicle.latitude, longitude: vehicle.longitude },
                     stopCoords
                 );
@@ -275,29 +277,4 @@ async function enrichFirstBusDepartures(
     } catch {
         return departures; // Graceful fallback
     }
-}
-
-/**
- * Parse HH:MM:SS time string to Date (today)
- */
-function parseTimeToDate(timeStr: string): Date {
-    const [hours, minutes, seconds] = timeStr.split(':').map(Number);
-    const date = new Date();
-    date.setHours(hours || 0, minutes || 0, seconds || 0, 0);
-
-    // If time is earlier than now, assume tomorrow
-    if (date < new Date()) {
-        date.setDate(date.getDate() + 1);
-    }
-
-    return date;
-}
-
-/**
- * Format Date as HH:MM string
- */
-function formatTimeHHMM(date: Date): string {
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    return `${hours}:${minutes}`;
 }

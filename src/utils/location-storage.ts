@@ -37,7 +37,7 @@ export function getSavedLocation(): SavedLocation | null {
             return null;
         }
 
-        const location: SavedLocation = JSON.parse(saved);
+        const location = JSON.parse(saved) as SavedLocation;
 
         // Check if saved location is too old (30 days)
         const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -57,7 +57,7 @@ export function getSavedLocation(): SavedLocation | null {
 /**
  * Clear saved location from localStorage
  */
-export function clearSavedLocation(): void {
+function clearSavedLocation(): void {
     try {
         localStorage.removeItem(LOCATION_STORAGE_KEY);
         Logger.debug('Saved location cleared');

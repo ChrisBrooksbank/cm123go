@@ -63,7 +63,7 @@ function processQueue(): void {
         return;
     }
 
-    executeRequest(next);
+    void executeRequest(next);
 }
 
 /**
@@ -102,7 +102,7 @@ export function throttledRequest<T>(key: string, fn: () => Promise<T>): Promise<
         const request: QueuedRequest<T> = { key, fn, resolve, reject };
 
         if (throttleState.activeCount < currentConfig.maxConcurrent) {
-            executeRequest(request);
+            void executeRequest(request);
         } else {
             Logger.debug(
                 `Throttle: queueing request (queue size: ${throttleState.queue.length + 1})`

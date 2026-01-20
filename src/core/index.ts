@@ -11,3 +11,6 @@ export { BusStopService } from './bus-stops';
 
 // Train station services
 export { TrainStationService, TrainDepartureService } from './train-stations';
+
+// Application state management (only export what's needed externally)
+export { type DisplayItem, setUserLocation, initializeState } from './app-state';

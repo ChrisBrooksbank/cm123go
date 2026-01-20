@@ -8,5 +8,6 @@
         "@utils/*": ["src/utils/*"],
         "@config/*": ["src/config/*"],
         "@types/*": ["src/types/*"]
-    }
+    },
+    "ignoreDependencies": ["sharp"]
 }

@@ -34,7 +34,7 @@ function openDatabase(): Promise<IDBDatabase> {
 
         request.onerror = () => {
             Logger.error('Failed to open IndexedDB', request.error);
-            reject(request.error);
+            reject(new Error(request.error?.message ?? 'Failed to open IndexedDB'));
         };
 
         request.onsuccess = () => {
@@ -72,7 +72,7 @@ export const BusStopCache = {
             const config = getConfig();
             const ttl = config.busStops.stopsCacheTtl;
 
-            return new Promise(resolve => {
+            return await new Promise(resolve => {
                 const transaction = db.transaction(STOPS_STORE, 'readonly');
                 const store = transaction.objectStore(STOPS_STORE);
                 const request = store.get('chelmsford-stops');
@@ -115,7 +115,7 @@ export const BusStopCache = {
         try {
             const db = await openDatabase();
 
-            return new Promise((resolve, reject) => {
+            return await new Promise((resolve, reject) => {
                 const transaction = db.transaction(STOPS_STORE, 'readwrite');
                 const store = transaction.objectStore(STOPS_STORE);
 
@@ -134,7 +134,7 @@ export const BusStopCache = {
 
                 request.onerror = () => {
                     Logger.warn('Failed to cache stops', request.error);
-                    reject(request.error);
+                    reject(new Error(request.error?.message ?? 'Failed to cache stops'));
                 };
             });
         } catch (error) {
@@ -152,7 +152,7 @@ export const BusStopCache = {
             const config = getConfig();
             const ttl = config.busStops.departuresCacheTtl;
 
-            return new Promise(resolve => {
+            return await new Promise(resolve => {
                 const transaction = db.transaction(DEPARTURES_STORE, 'readonly');
                 const store = transaction.objectStore(DEPARTURES_STORE);
                 const request = store.get(atcoCode);
@@ -196,7 +196,7 @@ export const BusStopCache = {
         try {
             const db = await openDatabase();
 
-            return new Promise((resolve, reject) => {
+            return await new Promise((resolve, reject) => {
                 const transaction = db.transaction(DEPARTURES_STORE, 'readwrite');
                 const store = transaction.objectStore(DEPARTURES_STORE);
 
@@ -215,7 +215,7 @@ export const BusStopCache = {
 
                 request.onerror = () => {
                     Logger.warn('Failed to cache departures', request.error);
-                    reject(request.error);
+                    reject(new Error(request.error?.message ?? 'Failed to cache departures'));
                 };
             });
         } catch (error) {
@@ -230,7 +230,7 @@ export const BusStopCache = {
         try {
             const db = await openDatabase();
 
-            return new Promise(resolve => {
+            return await new Promise(resolve => {
                 const transaction = db.transaction([STOPS_STORE, DEPARTURES_STORE], 'readwrite');
 
                 transaction.objectStore(STOPS_STORE).clear();
