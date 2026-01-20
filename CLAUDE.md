@@ -6,6 +6,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Transport app for Chelmsford UK
 
+## AI Workflow Requirements
+
+**After making any code changes, ALWAYS run:**
+
+```bash
+npm run check   # Runs typecheck + lint + format:check + knip
+```
+
+Fix all errors before considering the task complete. Do not commit code that fails checks.
+
+If tests exist for modified code, also run:
+
+```bash
+npm run test:run
+```
+
 ## Development Commands
 
 ```bash
