@@ -73,6 +73,20 @@ window.addEventListener('appinstalled', () => {
 });
 
 /**
+ * Announce a status message to screen readers via live region
+ */
+function announceStatus(message: string): void {
+    const announcer = document.getElementById('status-announcer');
+    if (announcer) {
+        announcer.textContent = message;
+        // Clear after a short delay to allow re-announcement of same message
+        setTimeout(() => {
+            announcer.textContent = '';
+        }, 1000);
+    }
+}
+
+/**
  * Get bearing direction label
  */
 function getBearingLabel(bearing: string | undefined): string {
@@ -124,6 +138,10 @@ function renderDepartureCard(board: DepartureBoard): string {
     const isFavorite = FavoritesManager.isFavorite(board.stop.atcoCode);
     const favoriteClass = isFavorite ? 'favorite-btn active' : 'favorite-btn';
     const favoriteText = isFavorite ? 'Favorited' : 'Favorite';
+    const favoriteAriaPressed = isFavorite ? 'true' : 'false';
+    const favoriteAriaLabel = isFavorite
+        ? `Remove ${board.stop.commonName} from favorites`
+        : `Add ${board.stop.commonName} to favorites`;
 
     const departuresHtml =
         board.departures.length > 0
@@ -139,7 +157,7 @@ function renderDepartureCard(board: DepartureBoard): string {
             <div class="stop-header">
                 <h2>${board.stop.commonName}${indicator}</h2>
                 ${bearingBadge}
-                <button class="${favoriteClass}" data-atco-code="${board.stop.atcoCode}">${favoriteText}</button>
+                <button class="${favoriteClass}" data-atco-code="${board.stop.atcoCode}" aria-pressed="${favoriteAriaPressed}" aria-label="${favoriteAriaLabel}">${favoriteText}</button>
             </div>
             <p class="distance">${Math.round(board.stop.distanceMeters)}m away <a href="${directionsUrl}" class="directions-link" target="_blank" rel="noopener" aria-label="Walking directions to this stop">🚶 Walk</a></p>
             <div class="departures-list">${departuresHtml}</div>
@@ -193,7 +211,7 @@ function displayItems(items: DisplayItem[], hasMoreStops = false): void {
 
         html += `
             <div id="show-more-container" class="show-more-container">
-                <button id="show-more-btn" class="show-more-btn">Show more stops (within ${displayRadius})</button>
+                <button id="show-more-btn" class="show-more-btn" aria-label="Load more bus stops within ${displayRadius}">Show more stops (within ${displayRadius})</button>
             </div>
         `;
     }
@@ -272,9 +290,23 @@ function handleFavoriteClick(e: Event): void {
 
     const isNowFavorite = FavoritesManager.toggle(atcoCode);
 
-    // Update button appearance immediately
+    // Get stop name from the card for aria-label
+    const card = btn.closest('.card');
+    const stopName = card?.querySelector('h2')?.textContent?.split('(')[0]?.trim() || 'this stop';
+
+    // Update button appearance and ARIA attributes immediately
     btn.classList.toggle('active', isNowFavorite);
     btn.textContent = isNowFavorite ? 'Favorited' : 'Favorite';
+    btn.setAttribute('aria-pressed', isNowFavorite ? 'true' : 'false');
+    btn.setAttribute(
+        'aria-label',
+        isNowFavorite ? `Remove ${stopName} from favorites` : `Add ${stopName} to favorites`
+    );
+
+    // Announce state change to screen readers
+    announceStatus(
+        isNowFavorite ? `${stopName} added to favorites` : `${stopName} removed from favorites`
+    );
 
     // Re-render to reorder (favorites at top)
     displayItems(allDisplayItems, !hasReachedMaxRadius);
@@ -297,10 +329,17 @@ async function handleShowMore(): Promise<void> {
     if (!userLocation || hasReachedMaxRadius) return;
 
     const btn = document.getElementById('show-more-btn') as HTMLButtonElement;
+    const container = document.getElementById('departures-container');
+
     if (btn) {
         btn.textContent = 'Searching...';
         btn.disabled = true;
+        btn.setAttribute('aria-busy', 'true');
     }
+    if (container) {
+        container.setAttribute('aria-busy', 'true');
+    }
+    announceStatus('Searching for more stops');
 
     const config = getConfig();
 
@@ -320,12 +359,18 @@ async function handleShowMore(): Promise<void> {
             hasReachedMaxRadius = true;
         }
 
+        // Clear aria-busy
+        if (container) {
+            container.setAttribute('aria-busy', 'false');
+        }
+
         if (result.stops.length === 0) {
             // No new stops found
+            announceStatus('No additional stops found');
             if (hasReachedMaxRadius) {
                 // Remove button - no more stops possible
-                const container = document.getElementById('show-more-container');
-                if (container) container.remove();
+                const showMoreContainer = document.getElementById('show-more-container');
+                if (showMoreContainer) showMoreContainer.remove();
             } else {
                 // Update button for next expansion
                 displayItems(allDisplayItems, true);
@@ -351,19 +396,32 @@ async function handleShowMore(): Promise<void> {
         // Re-render (button shows if not at max radius)
         displayItems(allDisplayItems, !hasReachedMaxRadius);
 
+        // Announce results to screen readers
+        announceStatus(
+            `Found ${newItems.length} additional stop${newItems.length === 1 ? '' : 's'}`
+        );
+
         Logger.debug('Expanded stops loaded', {
             count: newItems.length,
             radius: currentSearchRadius,
         });
     } catch (error) {
         Logger.error('Failed to load more stops', String(error));
+
+        // Clear aria-busy on error
+        if (container) {
+            container.setAttribute('aria-busy', 'false');
+        }
+
         if (btn) {
             const nextRadius = currentSearchRadius + config.busStops.radiusIncrement;
             const displayRadius =
                 nextRadius >= 1000 ? `${(nextRadius / 1000).toFixed(1)}km` : `${nextRadius}m`;
             btn.textContent = `Show more stops (within ${displayRadius})`;
             btn.disabled = false;
+            btn.removeAttribute('aria-busy');
         }
+        announceStatus('Failed to load more stops');
     }
 }
 
@@ -558,10 +616,17 @@ async function handleRefresh(): Promise<void> {
     hasReachedMaxRadius = false;
 
     const refreshBtn = document.getElementById('refresh-btn') as HTMLButtonElement;
+    const container = document.getElementById('departures-container');
+
     if (refreshBtn) {
         refreshBtn.disabled = true;
         refreshBtn.textContent = 'Refreshing...';
+        refreshBtn.setAttribute('aria-busy', 'true');
     }
+    if (container) {
+        container.setAttribute('aria-busy', 'true');
+    }
+    announceStatus('Refreshing departure times');
 
     try {
         // Get train stations first so we can reference them for error cases
@@ -639,7 +704,12 @@ async function handleRefresh(): Promise<void> {
         if (refreshBtn) {
             refreshBtn.disabled = false;
             refreshBtn.textContent = 'Refresh All';
+            refreshBtn.removeAttribute('aria-busy');
         }
+        if (container) {
+            container.setAttribute('aria-busy', 'false');
+        }
+        announceStatus('Departure times updated');
     }
 }
 

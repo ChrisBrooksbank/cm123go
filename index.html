@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>cm123go</title>
+        <title>Chelmsford Bus Times - cm123go</title>
         <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
         <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
         <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
@@ -33,7 +33,7 @@
                 --color-card: #f8fafb;
                 --color-border: #eef1f3;
                 --color-border-strong: #d8dfe3;
-                --color-text-muted: #94a3b0;
+                --color-text-muted: #5f6d78;
                 --color-text: #5a6872;
                 --color-text-strong: #2d3439;
 
@@ -228,9 +228,9 @@
                 color: var(--color-delayed);
             }
             .source-badge {
-                font-size: 0.65rem;
+                font-size: 0.75rem;
                 font-weight: 600;
-                padding: 0.15rem 0.35rem;
+                padding: 0.2rem 0.4rem;
                 border-radius: var(--radius-sm);
                 text-transform: uppercase;
             }
@@ -333,9 +333,9 @@
                 text-align: center;
             }
             .status-badge {
-                font-size: 0.65rem;
+                font-size: 0.75rem;
                 font-weight: 600;
-                padding: 0.15rem 0.35rem;
+                padding: 0.2rem 0.4rem;
                 border-radius: var(--radius-sm);
                 text-transform: uppercase;
             }
@@ -383,10 +383,12 @@
                 background: transparent;
                 border: 1px solid var(--color-border-strong);
                 border-radius: var(--radius-sm);
-                font-size: 0.75rem;
+                font-size: 0.8rem;
                 color: var(--color-text-muted);
                 cursor: pointer;
-                padding: 0.25rem 0.5rem;
+                padding: 0.5rem 0.75rem;
+                min-height: 44px;
+                min-width: 44px;
                 margin-left: auto;
                 transition: all 0.15s ease;
             }
@@ -423,9 +425,66 @@
                 opacity: 0.5;
                 cursor: not-allowed;
             }
+
+            /* Accessibility: Focus styles for keyboard navigation */
+            :focus-visible {
+                outline: 3px solid var(--color-link);
+                outline-offset: 2px;
+            }
+            button:focus-visible,
+            a:focus-visible,
+            input:focus-visible {
+                outline: 3px solid var(--color-link);
+                outline-offset: 2px;
+            }
+            .favorite-btn:focus-visible {
+                outline-offset: 1px;
+            }
+
+            /* Accessibility: Skip navigation link */
+            .skip-link {
+                position: absolute;
+                top: -100px;
+                left: 0;
+                background: var(--color-primary);
+                color: white;
+                padding: 0.75rem 1rem;
+                z-index: 1000;
+                font-weight: 600;
+                text-decoration: none;
+                border-radius: 0 0 var(--radius-md) 0;
+            }
+            .skip-link:focus {
+                top: 0;
+            }
+
+            /* Accessibility: Visually hidden but available to screen readers */
+            .visually-hidden {
+                position: absolute;
+                width: 1px;
+                height: 1px;
+                padding: 0;
+                margin: -1px;
+                overflow: hidden;
+                clip: rect(0, 0, 0, 0);
+                white-space: nowrap;
+                border: 0;
+            }
+
+            /* Accessibility: Reduced motion preference */
+            @media (prefers-reduced-motion: reduce) {
+                *,
+                *::before,
+                *::after {
+                    animation-duration: 0.01ms !important;
+                    animation-iteration-count: 1 !important;
+                    transition-duration: 0.01ms !important;
+                }
+            }
         </style>
     </head>
     <body>
+        <a href="#departures-container" class="skip-link">Skip to departures</a>
         <header>
             <h1>cm123go</h1>
         </header>
@@ -434,11 +493,14 @@
                 <h2>Your Location</h2>
                 <p id="postcode-display">Detecting your location...</p>
                 <form id="postcode-form" style="display: none; margin-top: 0.75rem">
+                    <label for="postcode-input" class="visually-hidden">Enter UK postcode</label>
                     <div style="display: flex; gap: 0.5rem">
                         <input
                             type="text"
                             id="postcode-input"
                             placeholder="e.g. CM1 1AB"
+                            aria-describedby="postcode-error"
+                            autocomplete="postal-code"
                             style="
                                 flex: 1;
                                 padding: 0.5rem;
@@ -447,14 +509,15 @@
                                 font-size: 1rem;
                             "
                         />
-                        <button type="submit" class="refresh-button">Go</button>
+                        <button type="submit" class="refresh-button" aria-label="Submit postcode">Go</button>
                     </div>
+                    <p id="postcode-error" class="visually-hidden" role="alert" aria-live="assertive"></p>
                 </form>
             </div>
 
             <div id="install-banner" class="card install-banner" hidden>
                 <div class="install-content">
-                    <div class="install-icon">📲</div>
+                    <div class="install-icon" aria-hidden="true">📲</div>
                     <div class="install-text">
                         <h3>Install cm123go</h3>
                         <p>Add to your home screen for quick access and offline use</p>
@@ -466,13 +529,16 @@
                 </div>
             </div>
 
-            <div id="departures-container"></div>
+            <div id="departures-container" aria-live="polite" aria-atomic="false" tabindex="-1"></div>
+
+            <!-- Hidden live region for status announcements -->
+            <div id="status-announcer" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
 
             <div id="refresh-container" style="display: none; text-align: center; margin-top: 1rem">
-                <button id="refresh-btn" class="refresh-button">Refresh All</button>
+                <button id="refresh-btn" class="refresh-button" aria-label="Refresh all departure times">Refresh All</button>
             </div>
 
-            <div class="card" id="error-card" style="display: none">
+            <div class="card" id="error-card" style="display: none" role="alert" aria-live="assertive">
                 <p id="error-message" class="error-message"></p>
             </div>
         </main>
