@@ -44,6 +44,9 @@ import {
     getHighContrast,
     setHighContrast,
     applyHighContrast,
+    isDarkMode,
+    setColorScheme,
+    applyColorScheme,
     type TextSize,
 } from '@/utils/settings';
 import { setupHelpHandlers, showHelpIfFirstVisit } from '@/ui/help';
@@ -333,6 +336,34 @@ function setupContrastButton(): void {
 }
 
 /**
+ * Set up dark mode toggle button
+ */
+function setupThemeButton(): void {
+    const btn = document.getElementById('theme-btn');
+    const icon = document.getElementById('theme-icon');
+    if (!btn || !icon) return;
+
+    const updateButtonState = () => {
+        const dark = isDarkMode();
+        btn.classList.toggle('active', dark);
+        btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+        // Sun icon when dark (to switch to light), moon when light (to switch to dark)
+        icon.innerHTML = dark ? '&#9788;' : '&#9790;';
+        btn.setAttribute('title', dark ? 'Switch to light mode' : 'Switch to dark mode');
+        btn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+    };
+
+    updateButtonState();
+
+    btn.addEventListener('click', () => {
+        const newScheme = isDarkMode() ? 'light' : 'dark';
+        setColorScheme(newScheme);
+        applyColorScheme(newScheme === 'dark');
+        updateButtonState();
+    });
+}
+
+/**
  * Initialize the application
  */
 async function init(): Promise<void> {
@@ -342,6 +373,7 @@ async function init(): Promise<void> {
             initializeSettings();
             setupTextSizeButtons();
             setupContrastButton();
+            setupThemeButton();
             setupHelpHandlers();
         } catch (settingsError) {
             Logger.warn('Settings initialization failed, continuing', settingsError);

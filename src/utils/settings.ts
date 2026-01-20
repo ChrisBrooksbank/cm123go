@@ -7,9 +7,11 @@ const STORAGE_KEYS = {
     textSize: 'cm123go-text-size',
     highContrast: 'cm123go-high-contrast',
     helpSeen: 'cm123go-help-seen',
+    colorScheme: 'cm123go-color-scheme',
 } as const;
 
 export type TextSize = 'normal' | 'large' | 'xl';
+export type ColorScheme = 'light' | 'dark';
 
 /**
  * Get saved text size preference
@@ -83,11 +85,64 @@ export function applyHighContrast(enabled: boolean): void {
 }
 
 /**
+ * Get saved color scheme preference
+ */
+function getColorScheme(): ColorScheme {
+    const saved = localStorage.getItem(STORAGE_KEYS.colorScheme);
+    if (saved === 'light' || saved === 'dark') {
+        return saved;
+    }
+    // Default to system preference
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+/**
+ * Save color scheme preference
+ */
+export function setColorScheme(scheme: ColorScheme): void {
+    localStorage.setItem(STORAGE_KEYS.colorScheme, scheme);
+}
+
+/**
+ * Check if dark mode is currently active
+ */
+export function isDarkMode(): boolean {
+    return getColorScheme() === 'dark';
+}
+
+/**
+ * Apply dark mode class to body and update theme-color meta tag
+ */
+export function applyColorScheme(dark: boolean): void {
+    document.body.classList.toggle('dark-mode', dark);
+
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeColorMeta) {
+        themeColorMeta.setAttribute('content', dark ? '#1a1f23' : '#5C6B73');
+    }
+}
+
+/**
+ * Initialize color scheme and listen for system preference changes
+ */
+function initializeColorScheme(): void {
+    applyColorScheme(isDarkMode());
+
+    // Listen for system preference changes when no explicit preference is saved
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        if (!localStorage.getItem(STORAGE_KEYS.colorScheme)) {
+            applyColorScheme(isDarkMode());
+        }
+    });
+}
+
+/**
  * Initialize settings from localStorage and apply to DOM
  */
 export function initializeSettings(): void {
     applyTextSize(getTextSize());
     applyHighContrast(getHighContrast());
+    initializeColorScheme();
 }
 
 /**

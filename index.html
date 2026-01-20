@@ -639,6 +639,8 @@
                 border: 2px solid #000000;
             }
             body.high-contrast .line-badge {
+                background: #000000;
+                color: #ffffff;
                 border: 2px solid #000000;
                 font-weight: 700;
             }
@@ -676,6 +678,96 @@
             }
             body.high-contrast .refresh-button {
                 border: 2px solid #000000;
+            }
+
+            /* Dark mode */
+            body.dark-mode {
+                --color-primary: #7a8c96;
+                --color-primary-hover: #8da0ab;
+                --color-accent: #d4b970;
+                --color-train: #8aab95;
+                --color-train-light: #2a3b30;
+                --color-link: #8ab0c6;
+                --color-link-hover: #a5c5d8;
+                --color-bg: #121518;
+                --color-card: #1a1f23;
+                --color-border: #2a3038;
+                --color-border-strong: #3a424d;
+                --color-text-muted: #8a95a0;
+                --color-text: #b8c4ce;
+                --color-text-strong: #e8ecf0;
+                --color-realtime: #6db37e;
+                --color-realtime-bg: #1e3026;
+                --color-scheduled: #9597d1;
+                --color-scheduled-bg: #262840;
+                --color-delayed: #d4a64d;
+                --color-cancelled: #d06060;
+                --color-cancelled-bg: #3a2020;
+                --color-favorite: #d4a64d;
+                --color-favorite-bg: #302810;
+                --color-success: #6db37e;
+                --color-success-bg: #1e3026;
+                --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+                --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
+            }
+            body.dark-mode header {
+                background: #1a1f23;
+                border-bottom: 1px solid var(--color-border);
+            }
+            body.dark-mode .text-size-btn,
+            body.dark-mode .settings-btn {
+                background: rgba(255, 255, 255, 0.1);
+                border-color: rgba(255, 255, 255, 0.2);
+            }
+            body.dark-mode .text-size-btn:hover,
+            body.dark-mode .settings-btn:hover {
+                background: rgba(255, 255, 255, 0.15);
+            }
+            body.dark-mode .text-size-btn.active,
+            body.dark-mode .settings-btn.active {
+                background: var(--color-accent);
+                border-color: var(--color-accent);
+                color: #1a1f23;
+            }
+            body.dark-mode .install-banner {
+                background: linear-gradient(to right, var(--color-train-light), var(--color-card));
+            }
+            body.dark-mode input {
+                background: var(--color-bg);
+                color: var(--color-text);
+            }
+            body.dark-mode .help-modal {
+                background: var(--color-card);
+            }
+            body.dark-mode .help-modal-overlay {
+                background: rgba(0, 0, 0, 0.7);
+            }
+
+            /* Dark mode + High contrast */
+            body.dark-mode.high-contrast {
+                --color-bg: #000000;
+                --color-card: #000000;
+                --color-text: #ffffff;
+                --color-text-strong: #ffffff;
+                --color-text-muted: #cccccc;
+                --color-border: #888888;
+                --color-border-strong: #ffffff;
+            }
+            body.dark-mode.high-contrast .card {
+                border: 3px solid #ffffff;
+            }
+            body.dark-mode.high-contrast a {
+                color: #6db3ff;
+            }
+            body.dark-mode.high-contrast header {
+                background: #000000;
+                border-bottom: 2px solid #ffffff;
+            }
+            body.dark-mode.high-contrast .platform-badge,
+            body.dark-mode.high-contrast .line-badge {
+                background: #000000;
+                color: #ffffff;
+                border: 2px solid #ffffff;
             }
 
             /* Larger touch targets */
@@ -915,6 +1007,15 @@
         </style>
     </head>
     <body>
+        <script>
+            (function () {
+                var scheme = localStorage.getItem('cm123go-color-scheme');
+                var isDark =
+                    scheme === 'dark' ||
+                    (!scheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                if (isDark) document.body.classList.add('dark-mode');
+            })();
+        </script>
         <a href="#departures-container" class="skip-link">Skip to departures</a>
         <header>
             <h1>CM123Go</h1>
@@ -953,6 +1054,15 @@
                     title="High contrast"
                 >
                     HC
+                </button>
+                <button
+                    id="theme-btn"
+                    class="settings-btn"
+                    aria-label="Toggle dark mode"
+                    aria-pressed="false"
+                    title="Dark mode"
+                >
+                    <span id="theme-icon">&#9790;</span>
                 </button>
                 <button
                     id="help-btn"
