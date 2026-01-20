@@ -234,7 +234,12 @@ function setupInstallBanner(): void {
 
     if (installBtn) {
         installBtn.addEventListener('click', () => {
-            if (!deferredPrompt) return;
+            if (!deferredPrompt) {
+                // Install prompt not available - hide banner and let user use browser's native install
+                Logger.info('Install prompt not available, hiding banner');
+                hideInstallBanner();
+                return;
+            }
             void (async () => {
                 await deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
