@@ -34,6 +34,17 @@ import {
     setSetupHandlersCallback,
     setupPostcodeDisplayClickHandler,
 } from '@/ui';
+import {
+    initializeSettings,
+    getTextSize,
+    setTextSize,
+    applyTextSize,
+    getHighContrast,
+    setHighContrast,
+    applyHighContrast,
+    type TextSize,
+} from '@/utils/settings';
+import { setupHelpHandlers, showHelpIfFirstVisit } from '@/ui/help';
 
 /**
  * Check if coordinates are within the Chelmsford service area
@@ -188,7 +199,10 @@ function setupPostcodeForm(): void {
 
         clearPostcodeError();
         setPostcodeFormBusy(true);
-        updatePostcodeDisplay('Looking up postcode...');
+        updatePostcodeDisplay(
+            '<span class="spinner" aria-hidden="true"></span>Finding your area...',
+            true
+        );
         hidePostcodeForm();
 
         void (async () => {
@@ -261,10 +275,71 @@ function setupAutoRefresh(): void {
 }
 
 /**
+ * Set up text size toggle buttons
+ */
+function setupTextSizeButtons(): void {
+    const buttons = document.querySelectorAll('.text-size-btn');
+    const currentSize = getTextSize();
+
+    // Set initial active state
+    buttons.forEach(btn => {
+        const size = btn.getAttribute('data-size') as TextSize;
+        btn.classList.toggle('active', size === currentSize);
+        btn.setAttribute('aria-pressed', size === currentSize ? 'true' : 'false');
+    });
+
+    // Add click handlers
+    buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const size = btn.getAttribute('data-size') as TextSize;
+            setTextSize(size);
+            applyTextSize(size);
+
+            // Update all button states
+            buttons.forEach(b => {
+                const bSize = b.getAttribute('data-size');
+                b.classList.toggle('active', bSize === size);
+                b.setAttribute('aria-pressed', bSize === size ? 'true' : 'false');
+            });
+        });
+    });
+}
+
+/**
+ * Set up high contrast toggle button
+ */
+function setupContrastButton(): void {
+    const btn = document.getElementById('contrast-btn');
+    if (!btn) return;
+
+    const isActive = getHighContrast();
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+
+    btn.addEventListener('click', () => {
+        const newState = !getHighContrast();
+        setHighContrast(newState);
+        applyHighContrast(newState);
+        btn.classList.toggle('active', newState);
+        btn.setAttribute('aria-pressed', newState ? 'true' : 'false');
+    });
+}
+
+/**
  * Initialize the application
  */
 async function init(): Promise<void> {
     try {
+        // Initialize accessibility settings first (applies saved text size, contrast)
+        try {
+            initializeSettings();
+            setupTextSizeButtons();
+            setupContrastButton();
+            setupHelpHandlers();
+        } catch (settingsError) {
+            Logger.warn('Settings initialization failed, continuing', settingsError);
+        }
+
         const config = await loadConfig();
         Logger.setDebugMode(config.debug);
         Logger.success('Configuration loaded');
@@ -346,7 +421,10 @@ async function init(): Promise<void> {
         setUserLocation(result.location.coordinates);
 
         // Reverse geocode to get postcode
-        updatePostcodeDisplay('Looking up postcode...');
+        updatePostcodeDisplay(
+            '<span class="spinner" aria-hidden="true"></span>Finding your area...',
+            true
+        );
 
         try {
             const postcode = await reverseGeocodeToPostcode(result.location.coordinates);
@@ -368,6 +446,9 @@ async function init(): Promise<void> {
 
         // Set up install banner buttons
         setupInstallBanner();
+
+        // Show help modal for first-time users (after location acquired to avoid blocking permission prompt)
+        showHelpIfFirstVisit();
     } catch (error) {
         Logger.error('Failed to initialize:', String(error));
         showPostcodeEntryForm(

@@ -510,18 +510,230 @@
                     transition-duration: 0.01ms !important;
                 }
             }
+
+            /* Text size settings */
+            body {
+                font-size: 18px; /* Increased from default 16px */
+            }
+            body.text-size-large {
+                font-size: 20px;
+            }
+            body.text-size-xl {
+                font-size: 24px;
+            }
+
+            /* Settings controls in header */
+            .header-controls {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+            .text-size-toggle {
+                display: flex;
+                gap: 0.25rem;
+            }
+            .text-size-btn {
+                min-width: 36px;
+                min-height: 36px;
+                padding: 0.25rem 0.5rem;
+                background: rgba(255, 255, 255, 0.2);
+                color: white;
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                border-radius: var(--radius-sm);
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.15s ease;
+            }
+            .text-size-btn:hover {
+                background: rgba(255, 255, 255, 0.3);
+            }
+            .text-size-btn.active {
+                background: var(--color-accent);
+                border-color: var(--color-accent);
+                color: var(--color-text-strong);
+            }
+            .settings-btn {
+                min-width: 36px;
+                min-height: 36px;
+                padding: 0.25rem 0.5rem;
+                background: rgba(255, 255, 255, 0.2);
+                color: white;
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                border-radius: var(--radius-sm);
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.15s ease;
+            }
+            .settings-btn:hover {
+                background: rgba(255, 255, 255, 0.3);
+            }
+            .settings-btn.active {
+                background: var(--color-accent);
+                border-color: var(--color-accent);
+                color: var(--color-text-strong);
+            }
+
+            /* High contrast mode */
+            body.high-contrast {
+                --color-bg: #ffffff;
+                --color-card: #ffffff;
+                --color-text: #000000;
+                --color-text-strong: #000000;
+                --color-text-muted: #000000;
+                --color-border: #000000;
+                --color-border-strong: #000000;
+            }
+            body.high-contrast .card {
+                border: 2px solid #000000;
+            }
+            body.high-contrast a {
+                text-decoration: underline;
+            }
+            body.high-contrast .source-badge {
+                border: 1px solid currentColor;
+            }
+
+            /* Larger touch targets */
+            .favorite-btn,
+            .directions-link,
+            .show-more-btn,
+            .refresh-button,
+            #change-location-btn {
+                min-height: 48px;
+                min-width: 48px;
+            }
+            .departure-row {
+                padding: 1rem 0;
+            }
+
+            /* Loading spinner */
+            .spinner {
+                display: inline-block;
+                width: 18px;
+                height: 18px;
+                border: 3px solid var(--color-border);
+                border-top-color: var(--color-primary);
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                vertical-align: middle;
+                margin-right: 0.5rem;
+            }
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+
+            /* Help modal */
+            .help-modal-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+                padding: 1rem;
+            }
+            .help-modal-overlay[hidden] {
+                display: none;
+            }
+            .help-modal {
+                background: var(--color-card);
+                border-radius: var(--radius-lg);
+                padding: 2rem;
+                max-width: 400px;
+                width: 100%;
+                box-shadow: var(--shadow-md);
+            }
+            .help-modal h2 {
+                font-size: 1.5rem;
+                margin-bottom: 1rem;
+                color: var(--color-text-strong);
+            }
+            .help-modal ul {
+                list-style: disc;
+                padding-left: 1.5rem;
+                margin-bottom: 1.5rem;
+            }
+            .help-modal li {
+                margin-bottom: 0.75rem;
+                line-height: 1.5;
+            }
+            .help-modal-close {
+                width: 100%;
+                padding: 1rem;
+                font-size: 1.1rem;
+                font-weight: 600;
+                background: var(--color-primary);
+                color: white;
+                border: none;
+                border-radius: var(--radius-md);
+                cursor: pointer;
+                min-height: 56px;
+            }
+            .help-modal-close:hover {
+                background: var(--color-primary-hover);
+            }
         </style>
     </head>
     <body>
         <a href="#departures-container" class="skip-link">Skip to departures</a>
         <header>
             <h1>cm123go</h1>
+            <div class="header-controls">
+                <div class="text-size-toggle" role="group" aria-label="Text size">
+                    <button
+                        class="text-size-btn active"
+                        data-size="normal"
+                        aria-label="Normal text size"
+                        aria-pressed="true"
+                    >
+                        A
+                    </button>
+                    <button
+                        class="text-size-btn"
+                        data-size="large"
+                        aria-label="Large text size"
+                        aria-pressed="false"
+                    >
+                        A+
+                    </button>
+                    <button
+                        class="text-size-btn"
+                        data-size="xl"
+                        aria-label="Extra large text size"
+                        aria-pressed="false"
+                    >
+                        A++
+                    </button>
+                </div>
+                <button
+                    id="contrast-btn"
+                    class="settings-btn"
+                    aria-label="Toggle high contrast mode"
+                    aria-pressed="false"
+                    title="High contrast"
+                >
+                    HC
+                </button>
+                <button
+                    id="help-btn"
+                    class="settings-btn"
+                    aria-label="Help and information"
+                    title="Help"
+                >
+                    ?
+                </button>
+            </div>
         </header>
         <main id="app">
             <div class="card">
                 <h2>Your Location</h2>
                 <div class="location-container">
-                    <p id="postcode-display">Detecting your location...</p>
+                    <p id="postcode-display">
+                        <span class="spinner" aria-hidden="true"></span>Finding where you are...
+                    </p>
                     <button id="change-location-btn" type="button" aria-label="Change location">
                         Change
                     </button>
@@ -586,10 +798,9 @@
 
             <div id="install-banner" class="card install-banner" hidden>
                 <div class="install-content">
-                    <div class="install-icon" aria-hidden="true">📲</div>
                     <div class="install-text">
-                        <h3>Install cm123go</h3>
-                        <p>Add to your home screen for quick access and offline use</p>
+                        <h3>Install this app</h3>
+                        <p>Add to your home screen for quick access when you need bus times</p>
                     </div>
                 </div>
                 <div class="install-actions">
@@ -618,9 +829,9 @@
                 <button
                     id="refresh-btn"
                     class="refresh-button"
-                    aria-label="Refresh all departure times"
+                    aria-label="Update all departure times"
                 >
-                    Refresh All
+                    Update times
                 </button>
             </div>
 
@@ -634,6 +845,40 @@
                 <p id="error-message" class="error-message"></p>
             </div>
         </main>
+
+        <!-- Help Modal -->
+        <div
+            id="help-modal"
+            class="help-modal-overlay"
+            hidden
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="help-title"
+        >
+            <div class="help-modal">
+                <h2 id="help-title">How to use this app</h2>
+                <ul>
+                    <li>
+                        <strong>See bus times:</strong> The app automatically finds buses near you
+                    </li>
+                    <li>
+                        <strong>Save favourites:</strong> Tap "Favourite" on any stop to save it for
+                        quick access
+                    </li>
+                    <li>
+                        <strong>Get directions:</strong> Tap "Directions" to see how to walk to a
+                        bus stop
+                    </li>
+                    <li>
+                        <strong>Change location:</strong> Tap "Change" to enter a different postcode
+                    </li>
+                    <li><strong>Text size:</strong> Use A, A+, A++ buttons to make text bigger</li>
+                    <li><strong>High contrast:</strong> Tap "HC" for easier-to-read colours</li>
+                </ul>
+                <button id="help-close" class="help-modal-close">Got it</button>
+            </div>
+        </div>
+
         <footer>Transport info for Chelmsford</footer>
         <script type="module" src="/src/main.ts"></script>
     </body>
