@@ -94,9 +94,12 @@ function renderDepartureCard(board: DepartureBoard): string {
             <div class="stop-header">
                 <h2>${board.stop.commonName}${indicator}</h2>
                 ${bearingBadge}
+            </div>
+            <div class="card-meta">
+                <span class="distance">${formatDistance(board.stop.distanceMeters)}</span>
+                <a href="${directionsUrl}" class="directions-link" target="_blank" rel="noopener" aria-label="Get walking directions to this stop">Directions</a>
                 <button class="${favoriteClass}" data-atco-code="${board.stop.atcoCode}" aria-pressed="${favoriteAriaPressed}" aria-label="${favoriteAriaLabel}">${favoriteText}</button>
             </div>
-            <p class="distance">${formatDistance(board.stop.distanceMeters)} <a href="${directionsUrl}" class="directions-link" target="_blank" rel="noopener" aria-label="Get walking directions to this stop">Directions</a></p>
             <div class="departures-list">${departuresHtml}</div>
         </div>
     `;
@@ -168,9 +171,12 @@ function renderTrainStationCard(board: TrainDepartureBoard, errorMessage?: strin
             <div class="stop-header">
                 <h2>${station.name}</h2>
                 <span class="station-badge">${station.crsCode}</span>
+            </div>
+            <div class="card-meta">
+                <span class="distance">${formatDistance(station.distanceMeters)}</span>
+                <a href="${directionsUrl}" class="directions-link" target="_blank" rel="noopener" aria-label="Get walking directions to this station">Directions</a>
                 <button class="${favoriteClass}" data-crs-code="${station.crsCode}" aria-pressed="${favoriteAriaPressed}" aria-label="${favoriteAriaLabel}">${favoriteText}</button>
             </div>
-            <p class="distance">${formatDistance(station.distanceMeters)} <a href="${directionsUrl}" class="directions-link" target="_blank" rel="noopener" aria-label="Get walking directions to this station">Directions</a></p>
             <div class="departures-list">${departuresHtml}</div>
         </div>
     `;

@@ -23,6 +23,7 @@ import {
 } from '@/core/app-state';
 import { displayItems, displayError, showPostcodeEntryForm } from './render';
 import { triggerHapticFeedback } from '@/utils/settings';
+import { getSavedLocation } from '@/utils/location-storage';
 
 /**
  * Announce a status message to screen readers via live region
@@ -352,7 +353,8 @@ export function setupPostcodeDisplayClickHandler(): void {
 
     if (changeLocationBtn) {
         changeLocationBtn.addEventListener('click', () => {
-            showPostcodeEntryForm('Enter a new postcode:');
+            const savedLocation = getSavedLocation();
+            showPostcodeEntryForm('Enter a new postcode:', savedLocation?.postcode);
         });
     }
 }

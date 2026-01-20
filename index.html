@@ -209,10 +209,16 @@
                 outline: 2px solid var(--color-primary);
                 outline-offset: 2px;
             }
+            .card-meta {
+                display: flex;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                margin-bottom: 1rem;
+            }
             .distance {
                 color: var(--color-text-muted);
                 font-size: 0.875rem;
-                margin-bottom: 1rem;
             }
             .departure-row {
                 display: flex;
@@ -380,7 +386,6 @@
                 display: inline-flex;
                 align-items: center;
                 gap: 0.25rem;
-                margin-left: 0.5rem;
                 padding: 0.5rem 0.75rem;
                 min-height: 44px;
                 min-width: 44px;
@@ -391,7 +396,6 @@
                 font-weight: 500;
                 border-radius: var(--radius-md);
                 border: 1px solid var(--color-border-strong);
-                vertical-align: middle;
                 transition: all 0.15s ease;
             }
             .directions-link:hover {
@@ -418,7 +422,6 @@
                 padding: 0.5rem 0.75rem;
                 min-height: 44px;
                 min-width: 44px;
-                margin-left: auto;
                 transition: all 0.15s ease;
             }
             .favorite-btn:hover {
@@ -817,6 +820,27 @@
             }
             html.text-size-xl .time-container {
                 margin-left: auto;
+            }
+
+            /* Stop header and card-meta fixes for large text */
+            html.text-size-large .stop-header,
+            html.text-size-xl .stop-header {
+                gap: 0.5rem;
+            }
+            html.text-size-large .card-meta,
+            html.text-size-xl .card-meta {
+                gap: 0.75rem;
+                row-gap: 0.5rem;
+            }
+            html.text-size-large .directions-link,
+            html.text-size-xl .directions-link {
+                font-size: 14px;
+                padding: 8px 12px;
+            }
+            html.text-size-large .favorite-btn,
+            html.text-size-xl .favorite-btn {
+                font-size: 14px;
+                padding: 8px 12px;
             }
 
             /* Help modal fixes for large text */
