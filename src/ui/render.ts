@@ -87,8 +87,6 @@ function renderDepartureCard(board: DepartureBoard): string {
             ? board.departures.map(renderDeparture).join('')
             : '<p class="no-departures">No buses expected soon</p>';
 
-    const timestamp = new Date(board.lastUpdated).toLocaleTimeString();
-    const staleIndicator = board.isStale ? ' (may be outdated)' : '';
     const directionsUrl = getDirectionsUrl(board.stop.coordinates);
 
     return `
@@ -100,7 +98,6 @@ function renderDepartureCard(board: DepartureBoard): string {
             </div>
             <p class="distance">${formatDistance(board.stop.distanceMeters)} <a href="${directionsUrl}" class="directions-link" target="_blank" rel="noopener" aria-label="Get walking directions to this stop">Directions</a></p>
             <div class="departures-list">${departuresHtml}</div>
-            <p class="timestamp">Updated ${timestamp}${staleIndicator}</p>
         </div>
     `;
 }
@@ -145,7 +142,7 @@ function renderTrainDeparture(departure: TrainDeparture): string {
  * Render a single train station card with departures
  */
 function renderTrainStationCard(board: TrainDepartureBoard, errorMessage?: string): string {
-    const { station, departures, lastUpdated, isStale } = board;
+    const { station, departures } = board;
 
     let departuresHtml: string;
     if (errorMessage) {
@@ -156,8 +153,6 @@ function renderTrainStationCard(board: TrainDepartureBoard, errorMessage?: strin
         departuresHtml = '<p class="no-departures">No trains expected soon</p>';
     }
 
-    const timestamp = new Date(lastUpdated).toLocaleTimeString();
-    const staleIndicator = isStale ? ' (may be outdated)' : '';
     const directionsUrl = getDirectionsUrl(station.coordinates);
 
     return `
@@ -168,7 +163,6 @@ function renderTrainStationCard(board: TrainDepartureBoard, errorMessage?: strin
             </div>
             <p class="distance">${formatDistance(station.distanceMeters)} <a href="${directionsUrl}" class="directions-link" target="_blank" rel="noopener" aria-label="Get walking directions to this stop">Directions</a></p>
             <div class="departures-list">${departuresHtml}</div>
-            <p class="timestamp">Updated ${timestamp}${staleIndicator}</p>
         </div>
     `;
 }
@@ -265,6 +259,17 @@ export function displayItems(
 
     // Set up event handlers
     onSetupHandlers();
+}
+
+/**
+ * Show loading state in departures container
+ */
+export function showLoadingDepartures(): void {
+    const container = document.getElementById('departures-container');
+    if (container) {
+        container.innerHTML =
+            '<div class="card"><p><span class="spinner" aria-hidden="true"></span>Loading departure times...</p></div>';
+    }
 }
 
 /**
@@ -380,5 +385,36 @@ export function showRefreshContainer(): void {
     const refreshContainer = document.getElementById('refresh-container');
     if (refreshContainer) {
         refreshContainer.style.display = 'block';
+    }
+}
+
+/**
+ * Format time since last update for display
+ */
+function formatTimeSinceUpdate(timestamp: number): string {
+    const now = Date.now();
+    const diffMs = now - timestamp;
+    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+
+    if (diffSecs < 10) {
+        return 'Just now';
+    }
+    if (diffSecs < 60) {
+        return `${diffSecs}s ago`;
+    }
+    if (diffMins === 1) {
+        return '1 min ago';
+    }
+    return `${diffMins} mins ago`;
+}
+
+/**
+ * Update the centralized last update time display
+ */
+export function updateLastUpdateDisplay(timestamp: number): void {
+    const element = document.getElementById('last-update-time');
+    if (element) {
+        element.textContent = `Updated ${formatTimeSinceUpdate(timestamp)}`;
     }
 }

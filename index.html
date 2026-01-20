@@ -191,6 +191,14 @@
             #postcode-display {
                 margin: 0;
             }
+            .last-update {
+                font-size: 0.9rem;
+                color: var(--color-text-muted);
+                font-weight: 500;
+            }
+            .last-update:empty {
+                display: none;
+            }
             #change-location-btn {
                 padding: 0.375rem 0.75rem;
                 font-size: 0.875rem;
@@ -511,15 +519,15 @@
                 }
             }
 
-            /* Text size settings */
-            body {
-                font-size: 18px; /* Increased from default 16px */
+            /* Text size settings - applied to html so rem units scale */
+            html {
+                font-size: 18px;
             }
-            body.text-size-large {
-                font-size: 20px;
+            html.text-size-large {
+                font-size: 22px;
             }
-            body.text-size-xl {
-                font-size: 24px;
+            html.text-size-xl {
+                font-size: 28px;
             }
 
             /* Settings controls in header */
@@ -579,18 +587,71 @@
                 --color-card: #ffffff;
                 --color-text: #000000;
                 --color-text-strong: #000000;
-                --color-text-muted: #000000;
-                --color-border: #000000;
+                --color-text-muted: #333333;
+                --color-border: #666666;
                 --color-border-strong: #000000;
             }
             body.high-contrast .card {
-                border: 2px solid #000000;
+                border: 3px solid #000000;
+                box-shadow: none;
             }
             body.high-contrast a {
                 text-decoration: underline;
+                color: #0000cc;
             }
             body.high-contrast .source-badge {
-                border: 1px solid currentColor;
+                border: 2px solid currentColor;
+                font-weight: 700;
+            }
+            body.high-contrast .source-badge.realtime {
+                background: #000000;
+                color: #ffffff;
+            }
+            body.high-contrast .source-badge.scheduled {
+                background: #ffffff;
+                color: #000000;
+            }
+            body.high-contrast .platform-badge {
+                background: #ffffff;
+                border: 2px solid #000000;
+            }
+            body.high-contrast .line-badge {
+                border: 2px solid #000000;
+                font-weight: 700;
+            }
+            body.high-contrast .station-badge {
+                border: 2px solid #000000;
+            }
+            body.high-contrast .favorite-btn {
+                border: 2px solid #000000;
+            }
+            body.high-contrast .favorite-btn.active {
+                background: #000000;
+                color: #ffffff;
+            }
+            body.high-contrast .directions-link {
+                border: 2px solid #000000;
+                background: #ffffff;
+            }
+            body.high-contrast .time {
+                font-weight: 700;
+                font-size: 1.1em;
+            }
+            body.high-contrast .departure-row {
+                border-bottom: 2px solid #000000;
+            }
+            body.high-contrast header {
+                background: #000000;
+            }
+            body.high-contrast #change-location-btn {
+                background: #000000;
+                border: 2px solid #000000;
+            }
+            body.high-contrast .show-more-btn {
+                border: 2px solid #000000;
+            }
+            body.high-contrast .refresh-button {
+                border: 2px solid #000000;
             }
 
             /* Larger touch targets */
@@ -734,6 +795,7 @@
                     <p id="postcode-display">
                         <span class="spinner" aria-hidden="true"></span>Finding where you are...
                     </p>
+                    <span id="last-update-time" class="last-update" aria-live="polite"></span>
                     <button id="change-location-btn" type="button" aria-label="Change location">
                         Change
                     </button>
@@ -859,7 +921,8 @@
                 <h2 id="help-title">How to use this app</h2>
                 <ul>
                     <li>
-                        <strong>See bus times:</strong> The app automatically finds buses near you
+                        <strong>See departure times:</strong> The app shows buses and trains near
+                        you
                     </li>
                     <li>
                         <strong>Save favourites:</strong> Tap "Favourite" on any stop to save it for

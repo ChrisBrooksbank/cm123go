@@ -21,7 +21,12 @@ import {
     addDisplayItems,
     resetProgressiveExpansion,
 } from '@/core/app-state';
-import { displayItems, displayError, showPostcodeEntryForm } from './render';
+import {
+    displayItems,
+    displayError,
+    showPostcodeEntryForm,
+    updateLastUpdateDisplay,
+} from './render';
 import { triggerHapticFeedback } from '@/utils/settings';
 
 /**
@@ -309,11 +314,13 @@ export async function handleRefresh(): Promise<void> {
                 true,
                 setupHandlersCallback
             );
+            updateLastUpdateDisplay(Date.now());
         } else {
             // Still show favorites and train departures even if nearby bus data fails
             const favItems: DisplayItem[] = favoriteBoards.map(b => ({ type: 'bus', data: b }));
             if (favItems.length > 0 || trainItems.length > 0) {
                 displayItems([...favItems, ...trainItems], false, setupHandlersCallback);
+                updateLastUpdateDisplay(Date.now());
             } else {
                 displayError(busResult.error.getUserMessage());
             }

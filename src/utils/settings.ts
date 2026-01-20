@@ -6,7 +6,6 @@
 const STORAGE_KEYS = {
     textSize: 'cm123go-text-size',
     highContrast: 'cm123go-high-contrast',
-    soundEnabled: 'cm123go-sound-enabled',
     helpSeen: 'cm123go-help-seen',
 } as const;
 
@@ -51,13 +50,6 @@ export function setHighContrast(enabled: boolean): void {
 }
 
 /**
- * Get sound/vibration preference (internal use)
- */
-function getSoundEnabled(): boolean {
-    return localStorage.getItem(STORAGE_KEYS.soundEnabled) === 'true';
-}
-
-/**
  * Check if help has been seen
  */
 export function getHelpSeen(): boolean {
@@ -72,11 +64,15 @@ export function setHelpSeen(): void {
 }
 
 /**
- * Apply text size class to body
+ * Apply text size class to html element (so rem units scale)
  */
 export function applyTextSize(size: TextSize): void {
-    document.body.classList.remove('text-size-normal', 'text-size-large', 'text-size-xl');
-    document.body.classList.add(`text-size-${size}`);
+    document.documentElement.classList.remove(
+        'text-size-normal',
+        'text-size-large',
+        'text-size-xl'
+    );
+    document.documentElement.classList.add(`text-size-${size}`);
 }
 
 /**
@@ -95,10 +91,11 @@ export function initializeSettings(): void {
 }
 
 /**
- * Trigger haptic feedback if enabled and supported
+ * Trigger haptic feedback if supported
+ * Always tries to vibrate - browsers handle unsupported gracefully
  */
 export function triggerHapticFeedback(duration: number = 50): void {
-    if (getSoundEnabled() && 'vibrate' in navigator) {
+    if ('vibrate' in navigator) {
         navigator.vibrate(duration);
     }
 }

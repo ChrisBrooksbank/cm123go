@@ -33,6 +33,8 @@ import {
     setupAllHandlers,
     setSetupHandlersCallback,
     setupPostcodeDisplayClickHandler,
+    updateLastUpdateDisplay,
+    showLoadingDepartures,
 } from '@/ui';
 import {
     initializeSettings,
@@ -163,6 +165,7 @@ async function fetchAndDisplayDepartures(location: Coordinates): Promise<void> {
         const favItems: DisplayItem[] = favoriteBoards.map(b => ({ type: 'bus', data: b }));
         if (favItems.length > 0 || trainItems.length > 0) {
             displayItems([...favItems, ...trainItems], false, setupAllHandlers);
+            updateLastUpdateDisplay(Date.now());
         } else {
             displayError(busResult.error.getUserMessage());
         }
@@ -175,6 +178,7 @@ async function fetchAndDisplayDepartures(location: Coordinates): Promise<void> {
 
     // Show "show more" button since there are likely more stops nearby
     displayItems([...favBusItems, ...nearbyBusItems, ...trainItems], true, setupAllHandlers);
+    updateLastUpdateDisplay(Date.now());
 }
 
 /**
@@ -382,6 +386,7 @@ async function init(): Promise<void> {
                 setUserLocation(savedLocation.coordinates);
                 const displayPostcode = savedLocation.postcode || 'Saved location';
                 updatePostcodeDisplay(`<span class="status">${displayPostcode}</span>`, true);
+                showLoadingDepartures();
                 await fetchAndDisplayDepartures(savedLocation.coordinates);
                 showRefreshContainer();
                 return;
@@ -405,6 +410,7 @@ async function init(): Promise<void> {
                 setUserLocation(savedLocation.coordinates);
                 const displayPostcode = savedLocation.postcode || 'Saved location';
                 updatePostcodeDisplay(`<span class="status">${displayPostcode}</span>`, true);
+                showLoadingDepartures();
                 await fetchAndDisplayDepartures(savedLocation.coordinates);
                 showRefreshContainer();
                 return;
@@ -436,6 +442,9 @@ async function init(): Promise<void> {
             saveLocation(result.location.coordinates);
             updatePostcodeDisplay('<span class="status">Location found</span>', true);
         }
+
+        // Show loading indicator while fetching departures
+        showLoadingDepartures();
 
         // Fetch and display bus departures + train stations (combined, sorted by distance)
         await fetchAndDisplayDepartures(result.location.coordinates);
