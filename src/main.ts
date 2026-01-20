@@ -10,6 +10,7 @@ import { reverseGeocodeToPostcode, geocodePostcode } from '@/api';
 import { debounce } from '@/utils/helpers';
 import { getDirectionsUrl } from '@/utils/maps-link';
 import { FavoritesManager } from '@/utils/favorites';
+import { saveLocation, getSavedLocation } from '@/utils/location-storage';
 import type {
     Coordinates,
     Departure,
@@ -268,12 +269,43 @@ function displayError(message: string): void {
 function showPostcodeEntryForm(message: string): void {
     const postcodeDisplay = document.getElementById('postcode-display');
     const postcodeForm = document.getElementById('postcode-form');
+    const postcodeInput = document.getElementById('postcode-input') as HTMLInputElement | null;
 
     if (postcodeDisplay) {
         postcodeDisplay.textContent = message;
     }
     if (postcodeForm) {
         postcodeForm.style.display = 'block';
+    }
+    // Focus the input for better UX
+    if (postcodeInput) {
+        setTimeout(() => postcodeInput.focus(), 100);
+    }
+}
+
+/**
+ * Set up click handler on postcode display to allow manual location change
+ */
+function setupPostcodeDisplayClickHandler(): void {
+    const postcodeDisplay = document.getElementById('postcode-display');
+
+    if (postcodeDisplay) {
+        postcodeDisplay.style.cursor = 'pointer';
+
+        const handleActivate = () => {
+            showPostcodeEntryForm('Enter a new postcode:');
+        };
+
+        // Click handler
+        postcodeDisplay.addEventListener('click', handleActivate);
+
+        // Keyboard handler for accessibility
+        postcodeDisplay.addEventListener('keydown', (e: KeyboardEvent) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleActivate();
+            }
+        });
     }
 }
 
@@ -740,6 +772,9 @@ async function init() {
         const postcodeDisplay = document.getElementById('postcode-display');
         if (!postcodeDisplay) return;
 
+        // Set up click handler on postcode display (so users can change location)
+        setupPostcodeDisplayClickHandler();
+
         // Set up manual postcode entry form (early, so it works if geolocation fails)
         const postcodeForm = document.getElementById('postcode-form') as HTMLFormElement | null;
         const postcodeInput = document.getElementById('postcode-input') as HTMLInputElement | null;
@@ -757,6 +792,7 @@ async function init() {
                     const { coordinates, normalizedPostcode } =
                         await geocodePostcode(enteredPostcode);
                     userLocation = coordinates;
+                    saveLocation(coordinates, normalizedPostcode);
                     postcodeDisplay.innerHTML = `<span class="status">${normalizedPostcode}</span>`;
                     await fetchAndDisplayDepartures(coordinates);
                     // Show refresh button
@@ -782,13 +818,42 @@ async function init() {
         const result = await GeolocationService.getLocationFromBrowser();
 
         if (!result.success) {
+            // Try to use saved location as fallback
+            const savedLocation = getSavedLocation();
+            if (savedLocation) {
+                Logger.info('Using saved location as fallback');
+                userLocation = savedLocation.coordinates;
+                const displayPostcode = savedLocation.postcode || 'Saved location';
+                postcodeDisplay.innerHTML = `<span class="status">${displayPostcode}</span>`;
+                await fetchAndDisplayDepartures(savedLocation.coordinates);
+                // Show refresh button
+                const refreshContainer = document.getElementById('refresh-container');
+                if (refreshContainer) refreshContainer.style.display = 'block';
+                return;
+            }
+
             showPostcodeEntryForm('Could not detect location. Enter postcode:');
             return;
         }
 
         // Check if user appears far from Chelmsford (likely VPN user)
         if (!isWithinChelmsfordArea(result.location.coordinates)) {
-            Logger.info('User far from Chelmsford, requesting postcode');
+            Logger.info('User far from Chelmsford, checking saved location');
+
+            // Try to use saved location if it's within Chelmsford area
+            const savedLocation = getSavedLocation();
+            if (savedLocation && isWithinChelmsfordArea(savedLocation.coordinates)) {
+                Logger.info('Using saved location (within Chelmsford)');
+                userLocation = savedLocation.coordinates;
+                const displayPostcode = savedLocation.postcode || 'Saved location';
+                postcodeDisplay.innerHTML = `<span class="status">${displayPostcode}</span>`;
+                await fetchAndDisplayDepartures(savedLocation.coordinates);
+                // Show refresh button
+                const refreshContainer = document.getElementById('refresh-container');
+                if (refreshContainer) refreshContainer.style.display = 'block';
+                return;
+            }
+
             showPostcodeEntryForm('Please enter a Chelmsford postcode to find nearby stops:');
             return;
         }
@@ -801,10 +866,12 @@ async function init() {
 
         try {
             const postcode = await reverseGeocodeToPostcode(result.location.coordinates);
+            saveLocation(result.location.coordinates, postcode);
             postcodeDisplay.innerHTML = `<span class="status">${postcode}</span>`;
             Logger.success('Postcode displayed', { postcode });
         } catch (postcodeError) {
             Logger.warn('Postcode lookup failed, continuing with coordinates', postcodeError);
+            saveLocation(result.location.coordinates);
             postcodeDisplay.innerHTML = '<span class="status">Location found</span>';
         }
 

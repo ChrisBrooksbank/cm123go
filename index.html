@@ -182,6 +182,22 @@
                 background: var(--color-success-bg);
                 color: var(--color-success);
             }
+            #postcode-display {
+                position: relative;
+                transition: background-color 0.15s ease;
+                padding: 0.5rem;
+                margin: -0.5rem;
+                border-radius: var(--radius-md);
+            }
+            #postcode-display:hover {
+                background: var(--color-border);
+            }
+            #postcode-display::after {
+                content: '✏️';
+                margin-left: 0.5rem;
+                font-size: 0.875rem;
+                opacity: 0.6;
+            }
             .distance {
                 color: var(--color-text-muted);
                 font-size: 0.875rem;
@@ -491,7 +507,7 @@
         <main id="app">
             <div class="card">
                 <h2>Your Location</h2>
-                <p id="postcode-display">Detecting your location...</p>
+                <p id="postcode-display" role="button" tabindex="0" aria-label="Click to change location">Detecting your location...</p>
                 <form id="postcode-form" style="display: none; margin-top: 0.75rem">
                     <label for="postcode-input" class="visually-hidden">Enter UK postcode</label>
                     <div style="display: flex; gap: 0.5rem">
