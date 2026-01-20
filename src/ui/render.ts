@@ -155,13 +155,22 @@ function renderTrainStationCard(board: TrainDepartureBoard, errorMessage?: strin
 
     const directionsUrl = getDirectionsUrl(station.coordinates);
 
+    const isFavorite = FavoritesManager.isStationFavorite(station.crsCode);
+    const favoriteClass = isFavorite ? 'favorite-btn active' : 'favorite-btn';
+    const favoriteText = isFavorite ? 'Favorited' : 'Favorite';
+    const favoriteAriaPressed = isFavorite ? 'true' : 'false';
+    const favoriteAriaLabel = isFavorite
+        ? `Remove ${station.name} from favorites`
+        : `Add ${station.name} to favorites`;
+
     return `
-        <div class="card train-station-card">
+        <div class="card train-station-card" data-crs-code="${station.crsCode}">
             <div class="stop-header">
                 <h2>${station.name}</h2>
                 <span class="station-badge">${station.crsCode}</span>
+                <button class="${favoriteClass}" data-crs-code="${station.crsCode}" aria-pressed="${favoriteAriaPressed}" aria-label="${favoriteAriaLabel}">${favoriteText}</button>
             </div>
-            <p class="distance">${formatDistance(station.distanceMeters)} <a href="${directionsUrl}" class="directions-link" target="_blank" rel="noopener" aria-label="Get walking directions to this stop">Directions</a></p>
+            <p class="distance">${formatDistance(station.distanceMeters)} <a href="${directionsUrl}" class="directions-link" target="_blank" rel="noopener" aria-label="Get walking directions to this station">Directions</a></p>
             <div class="departures-list">${departuresHtml}</div>
         </div>
     `;
@@ -213,11 +222,16 @@ export function displayItems(
 
     // Get favorites for sorting
     const favoriteAtcoCodes = FavoritesManager.getAtcoCodes();
+    const favoriteCrsCodes = FavoritesManager.getCrsCodes();
 
     // Sort: favorites first, then by distance
     const sorted = [...items].sort((a, b) => {
-        const aIsFav = a.type === 'bus' && favoriteAtcoCodes.has(a.data.stop.atcoCode);
-        const bIsFav = b.type === 'bus' && favoriteAtcoCodes.has(b.data.stop.atcoCode);
+        const aIsFav =
+            (a.type === 'bus' && favoriteAtcoCodes.has(a.data.stop.atcoCode)) ||
+            (a.type === 'train' && favoriteCrsCodes.has(a.data.station.crsCode));
+        const bIsFav =
+            (b.type === 'bus' && favoriteAtcoCodes.has(b.data.stop.atcoCode)) ||
+            (b.type === 'train' && favoriteCrsCodes.has(b.data.station.crsCode));
 
         // Favorites first
         if (aIsFav && !bIsFav) return -1;

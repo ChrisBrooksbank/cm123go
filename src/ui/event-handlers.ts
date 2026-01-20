@@ -64,7 +64,7 @@ function setupFavoriteHandlers(): void {
 }
 
 /**
- * Handle favorite button clicks
+ * Handle favorite button clicks (bus stops and train stations)
  */
 function handleFavoriteClick(e: Event): void {
     const target = e.target as HTMLElement;
@@ -73,16 +73,23 @@ function handleFavoriteClick(e: Event): void {
 
     const btn = closest;
     const atcoCode = btn.getAttribute('data-atco-code');
-    if (!atcoCode) return;
+    const crsCode = btn.getAttribute('data-crs-code');
 
-    const isNowFavorite = FavoritesManager.toggle(atcoCode);
+    if (!atcoCode && !crsCode) return;
+
+    let isNowFavorite: boolean;
+    if (atcoCode) {
+        isNowFavorite = FavoritesManager.toggle(atcoCode);
+    } else {
+        isNowFavorite = FavoritesManager.toggleStation(crsCode!);
+    }
 
     // Provide haptic feedback
     triggerHapticFeedback();
 
-    // Get stop name from the card for aria-label
+    // Get stop/station name from the card for aria-label
     const card = btn.closest('.card');
-    const stopName = card?.querySelector('h2')?.textContent?.split('(')[0]?.trim() || 'this stop';
+    const name = card?.querySelector('h2')?.textContent?.split('(')[0]?.trim() || 'this location';
 
     // Update button appearance and ARIA attributes immediately
     btn.classList.toggle('active', isNowFavorite);
@@ -90,13 +97,11 @@ function handleFavoriteClick(e: Event): void {
     btn.setAttribute('aria-pressed', isNowFavorite ? 'true' : 'false');
     btn.setAttribute(
         'aria-label',
-        isNowFavorite ? `Remove ${stopName} from favorites` : `Add ${stopName} to favorites`
+        isNowFavorite ? `Remove ${name} from favorites` : `Add ${name} to favorites`
     );
 
     // Announce state change to screen readers
-    announceStatus(
-        isNowFavorite ? `${stopName} added to favorites` : `${stopName} removed from favorites`
-    );
+    announceStatus(isNowFavorite ? `${name} added to favorites` : `${name} removed from favorites`);
 
     // Re-render to reorder (favorites at top)
     displayItems(getAllDisplayItems(), !hasReachedMaxRadius(), setupHandlersCallback);
