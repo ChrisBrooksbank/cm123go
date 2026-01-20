@@ -21,4 +21,5 @@ export {
     handleRefresh,
     setSetupHandlersCallback,
     setupPostcodeDisplayClickHandler,
+    setupLocationUpdateHandler,
 } from './event-handlers';

@@ -5,8 +5,16 @@
 
 import { getConfig } from '@/config';
 import { Logger } from '@/utils/logger';
-import { BusStopService, TrainStationService, TrainDepartureService } from '@/core';
+import {
+    BusStopService,
+    TrainStationService,
+    TrainDepartureService,
+    GeolocationService,
+    setUserLocation,
+} from '@/core';
 import { FavoritesManager } from '@/utils/favorites';
+import { reverseGeocodeToPostcode } from '@/api';
+import { saveLocation, getSavedLocation } from '@/utils/location-storage';
 import type { DepartureBoard } from '@/types';
 import type { DisplayItem } from '@/core/app-state';
 import {
@@ -21,9 +29,14 @@ import {
     addDisplayItems,
     resetProgressiveExpansion,
 } from '@/core/app-state';
-import { displayItems, displayError, showPostcodeEntryForm } from './render';
+import {
+    displayItems,
+    displayError,
+    showPostcodeEntryForm,
+    updatePostcodeDisplay,
+    showLoadingDepartures,
+} from './render';
 import { triggerHapticFeedback } from '@/utils/settings';
-import { getSavedLocation } from '@/utils/location-storage';
 
 /**
  * Announce a status message to screen readers via live region
@@ -356,5 +369,94 @@ export function setupPostcodeDisplayClickHandler(): void {
             const savedLocation = getSavedLocation();
             showPostcodeEntryForm('Enter a new postcode:', savedLocation?.postcode);
         });
+    }
+}
+
+/**
+ * Set up click handler on update location button to re-detect GPS location
+ */
+export function setupLocationUpdateHandler(): void {
+    const updateLocationBtn = document.getElementById('update-location-btn');
+    if (!updateLocationBtn) return;
+
+    updateLocationBtn.addEventListener('click', () => void handleLocationUpdate());
+}
+
+/**
+ * Handle location update button click - re-detect GPS and refresh departures
+ */
+async function handleLocationUpdate(): Promise<void> {
+    const btn = document.getElementById('update-location-btn');
+
+    // Show loading state
+    if (btn instanceof HTMLButtonElement) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner" aria-hidden="true"></span>';
+        btn.setAttribute('aria-busy', 'true');
+    }
+    announceStatus('Detecting your location');
+
+    try {
+        const result = await GeolocationService.getLocationFromBrowser();
+
+        if (!result.success) {
+            Logger.warn('Location update failed', result.error);
+            announceStatus('Could not detect location');
+            // Show error in postcode display briefly
+            updatePostcodeDisplay(
+                '<span class="status" style="background: var(--color-error-bg); color: var(--color-error);">Location unavailable</span>',
+                true
+            );
+            // Restore previous display after 3 seconds
+            setTimeout(() => {
+                const savedLocation = getSavedLocation();
+                if (savedLocation?.postcode) {
+                    updatePostcodeDisplay(
+                        `<span class="status">${savedLocation.postcode}</span>`,
+                        true
+                    );
+                }
+            }, 3000);
+            return;
+        }
+
+        // Update app state with new location
+        setUserLocation(result.location.coordinates);
+
+        // Show "finding area" while reverse geocoding
+        updatePostcodeDisplay(
+            '<span class="spinner" aria-hidden="true"></span>Finding your area...',
+            true
+        );
+
+        // Reverse geocode to get postcode
+        try {
+            const postcode = await reverseGeocodeToPostcode(result.location.coordinates);
+            saveLocation(result.location.coordinates, postcode);
+            updatePostcodeDisplay(`<span class="status">${postcode}</span>`, true);
+            Logger.success('Location updated', { postcode });
+        } catch {
+            Logger.warn('Postcode lookup failed, continuing with coordinates');
+            saveLocation(result.location.coordinates);
+            updatePostcodeDisplay('<span class="status">Location found</span>', true);
+        }
+
+        // Refresh departures for new location
+        showLoadingDepartures();
+        await handleRefresh();
+        announceStatus('Location updated');
+    } catch (error) {
+        Logger.error('Location update error', String(error));
+        announceStatus('Failed to update location');
+    } finally {
+        // Restore button
+        if (btn instanceof HTMLButtonElement) {
+            btn.disabled = false;
+            btn.innerHTML = `<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+            </svg>`;
+            btn.removeAttribute('aria-busy');
+        }
     }
 }

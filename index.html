@@ -191,6 +191,34 @@
             #postcode-display {
                 margin: 0;
             }
+            #update-location-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0.375rem;
+                background: var(--color-primary);
+                color: white;
+                border: none;
+                border-radius: var(--radius-sm);
+                cursor: pointer;
+                transition: background-color 0.15s ease;
+            }
+            #update-location-btn:hover {
+                background: var(--color-primary-hover, #1d4ed8);
+            }
+            #update-location-btn:focus-visible {
+                outline: 2px solid var(--color-primary);
+                outline-offset: 2px;
+            }
+            #update-location-btn:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+            #update-location-btn .spinner {
+                width: 20px;
+                height: 20px;
+                border-width: 2px;
+            }
             #change-location-btn {
                 padding: 0.375rem 0.75rem;
                 font-size: 0.875rem;
@@ -638,7 +666,8 @@
             body.high-contrast header {
                 background: #000000;
             }
-            body.high-contrast #change-location-btn {
+            body.high-contrast #change-location-btn,
+            body.high-contrast #update-location-btn {
                 background: #000000;
                 border: 2px solid #000000;
             }
@@ -654,7 +683,8 @@
             .directions-link,
             .show-more-btn,
             .refresh-button,
-            #change-location-btn {
+            #change-location-btn,
+            #update-location-btn {
                 min-height: 48px;
                 min-width: 48px;
             }
@@ -941,6 +971,27 @@
                     <p id="postcode-display">
                         <span class="spinner" aria-hidden="true"></span>Finding where you are...
                     </p>
+                    <button
+                        id="update-location-btn"
+                        type="button"
+                        aria-label="Update my location"
+                        title="Update my location"
+                    >
+                        <svg
+                            aria-hidden="true"
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <circle cx="12" cy="12" r="3" />
+                            <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+                        </svg>
+                    </button>
                     <button id="change-location-btn" type="button" aria-label="Change location">
                         Change
                     </button>
@@ -1078,7 +1129,8 @@
                         bus stop
                     </li>
                     <li>
-                        <strong>Change location:</strong> Tap "Change" to enter a different postcode
+                        <strong>Update location:</strong> Tap the location icon to re-detect where
+                        you are, or "Change" to enter a different postcode
                     </li>
                     <li><strong>Text size:</strong> Use A, A+, A++ buttons to make text bigger</li>
                     <li><strong>High contrast:</strong> Tap "HC" for easier-to-read colours</li>

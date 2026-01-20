@@ -33,6 +33,7 @@ import {
     setupAllHandlers,
     setSetupHandlersCallback,
     setupPostcodeDisplayClickHandler,
+    setupLocationUpdateHandler,
     showLoadingDepartures,
 } from '@/ui';
 import {
@@ -361,6 +362,9 @@ async function init(): Promise<void> {
 
         // Set up click handler on postcode display (so users can change location)
         setupPostcodeDisplayClickHandler();
+
+        // Set up click handler on location update button (re-detect GPS)
+        setupLocationUpdateHandler();
 
         // Set up manual postcode entry form (early, so it works if geolocation fails)
         setupPostcodeForm();
