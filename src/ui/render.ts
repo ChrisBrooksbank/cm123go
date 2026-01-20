@@ -387,21 +387,3 @@ export function showRefreshContainer(): void {
         refreshContainer.style.display = 'block';
     }
 }
-
-/**
- * Format current time for display (HH:MM format)
- */
-function formatCurrentTime(): string {
-    const now = new Date();
-    return now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-}
-
-/**
- * Update the centralized last update time display
- */
-export function updateLastUpdateDisplay(_timestamp: number): void {
-    const element = document.getElementById('last-update-time');
-    if (element) {
-        element.textContent = formatCurrentTime();
-    }
-}

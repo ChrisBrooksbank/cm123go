@@ -13,7 +13,6 @@ export {
     showPostcodeError,
     clearPostcodeError,
     setPostcodeFormBusy,
-    updateLastUpdateDisplay,
     showLoadingDepartures,
 } from './render';
 
