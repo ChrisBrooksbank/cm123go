@@ -389,32 +389,19 @@ export function showRefreshContainer(): void {
 }
 
 /**
- * Format time since last update for display
+ * Format current time for display (HH:MM format)
  */
-function formatTimeSinceUpdate(timestamp: number): string {
-    const now = Date.now();
-    const diffMs = now - timestamp;
-    const diffSecs = Math.floor(diffMs / 1000);
-    const diffMins = Math.floor(diffSecs / 60);
-
-    if (diffSecs < 10) {
-        return 'Just now';
-    }
-    if (diffSecs < 60) {
-        return `${diffSecs}s ago`;
-    }
-    if (diffMins === 1) {
-        return '1 min ago';
-    }
-    return `${diffMins} mins ago`;
+function formatCurrentTime(): string {
+    const now = new Date();
+    return now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
 /**
  * Update the centralized last update time display
  */
-export function updateLastUpdateDisplay(timestamp: number): void {
+export function updateLastUpdateDisplay(_timestamp: number): void {
     const element = document.getElementById('last-update-time');
     if (element) {
-        element.textContent = `Updated ${formatTimeSinceUpdate(timestamp)}`;
+        element.textContent = formatCurrentTime();
     }
 }
