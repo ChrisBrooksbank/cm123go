@@ -51,7 +51,7 @@ function renderDeparture(departure: Departure): string {
     const timeDisplay = departure.minutesUntil <= 0 ? 'Due' : `${departure.minutesUntil} min`;
     const sourceIndicator = departure.isRealTime
         ? '<span class="source-badge realtime">Live</span>'
-        : '<span class="source-badge scheduled">Sched</span>';
+        : '<span class="source-badge scheduled">Scheduled</span>';
 
     return `
         <div class="departure-row">
@@ -85,10 +85,10 @@ function renderDepartureCard(board: DepartureBoard): string {
     const departuresHtml =
         board.departures.length > 0
             ? board.departures.map(renderDeparture).join('')
-            : '<p class="no-departures">No upcoming departures</p>';
+            : '<p class="no-departures">No buses expected soon</p>';
 
     const timestamp = new Date(board.lastUpdated).toLocaleTimeString();
-    const staleIndicator = board.isStale ? ' (cached)' : '';
+    const staleIndicator = board.isStale ? ' (may be outdated)' : '';
     const directionsUrl = getDirectionsUrl(board.stop.coordinates);
 
     return `
@@ -98,7 +98,7 @@ function renderDepartureCard(board: DepartureBoard): string {
                 ${bearingBadge}
                 <button class="${favoriteClass}" data-atco-code="${board.stop.atcoCode}" aria-pressed="${favoriteAriaPressed}" aria-label="${favoriteAriaLabel}">${favoriteText}</button>
             </div>
-            <p class="distance">${formatDistance(board.stop.distanceMeters)} <a href="${directionsUrl}" class="directions-link" target="_blank" rel="noopener" aria-label="Walking directions to this stop">🚶 Walk</a></p>
+            <p class="distance">${formatDistance(board.stop.distanceMeters)} <a href="${directionsUrl}" class="directions-link" target="_blank" rel="noopener" aria-label="Get walking directions to this stop">Directions</a></p>
             <div class="departures-list">${departuresHtml}</div>
             <p class="timestamp">Updated ${timestamp}${staleIndicator}</p>
         </div>
@@ -112,7 +112,7 @@ function renderTrainDeparture(departure: TrainDeparture): string {
     const timeDisplay = departure.minutesUntil <= 0 ? 'Due' : `${departure.minutesUntil} min`;
     const sourceIndicator = departure.isRealTime
         ? '<span class="source-badge realtime">Live</span>'
-        : '<span class="source-badge scheduled">Sched</span>';
+        : '<span class="source-badge scheduled">Scheduled</span>';
 
     let timeClass = 'time';
     let statusBadge = '';
@@ -153,11 +153,11 @@ function renderTrainStationCard(board: TrainDepartureBoard, errorMessage?: strin
     } else if (departures.length > 0) {
         departuresHtml = departures.map(renderTrainDeparture).join('');
     } else {
-        departuresHtml = '<p class="no-departures">No upcoming departures</p>';
+        departuresHtml = '<p class="no-departures">No trains expected soon</p>';
     }
 
     const timestamp = new Date(lastUpdated).toLocaleTimeString();
-    const staleIndicator = isStale ? ' (cached)' : '';
+    const staleIndicator = isStale ? ' (may be outdated)' : '';
     const directionsUrl = getDirectionsUrl(station.coordinates);
 
     return `
@@ -166,7 +166,7 @@ function renderTrainStationCard(board: TrainDepartureBoard, errorMessage?: strin
                 <h2>${station.name}</h2>
                 <span class="station-badge">${station.crsCode}</span>
             </div>
-            <p class="distance">${formatDistance(station.distanceMeters)} <a href="${directionsUrl}" class="directions-link" target="_blank" rel="noopener" aria-label="Walking directions to this stop">🚶 Walk</a></p>
+            <p class="distance">${formatDistance(station.distanceMeters)} <a href="${directionsUrl}" class="directions-link" target="_blank" rel="noopener" aria-label="Get walking directions to this stop">Directions</a></p>
             <div class="departures-list">${departuresHtml}</div>
             <p class="timestamp">Updated ${timestamp}${staleIndicator}</p>
         </div>

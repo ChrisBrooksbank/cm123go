@@ -22,6 +22,7 @@ import {
     resetProgressiveExpansion,
 } from '@/core/app-state';
 import { displayItems, displayError, showPostcodeEntryForm } from './render';
+import { triggerHapticFeedback } from '@/utils/settings';
 
 /**
  * Announce a status message to screen readers via live region
@@ -75,6 +76,9 @@ function handleFavoriteClick(e: Event): void {
     if (!atcoCode) return;
 
     const isNowFavorite = FavoritesManager.toggle(atcoCode);
+
+    // Provide haptic feedback
+    triggerHapticFeedback();
 
     // Get stop name from the card for aria-label
     const card = btn.closest('.card');
@@ -230,13 +234,13 @@ export async function handleRefresh(): Promise<void> {
 
     if (refreshBtn instanceof HTMLButtonElement) {
         refreshBtn.disabled = true;
-        refreshBtn.textContent = 'Refreshing...';
+        refreshBtn.textContent = 'Updating...';
         refreshBtn.setAttribute('aria-busy', 'true');
     }
     if (container) {
         container.setAttribute('aria-busy', 'true');
     }
-    announceStatus('Refreshing departure times');
+    announceStatus('Updating departure times');
 
     try {
         // Get train stations first so we can reference them for error cases
@@ -317,13 +321,13 @@ export async function handleRefresh(): Promise<void> {
     } finally {
         if (refreshBtn instanceof HTMLButtonElement) {
             refreshBtn.disabled = false;
-            refreshBtn.textContent = 'Refresh All';
+            refreshBtn.textContent = 'Update times';
             refreshBtn.removeAttribute('aria-busy');
         }
         if (container) {
             container.setAttribute('aria-busy', 'false');
         }
-        announceStatus('Departure times updated');
+        announceStatus('Times updated');
     }
 }
 
