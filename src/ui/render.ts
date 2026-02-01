@@ -226,11 +226,14 @@ export function displayItems(
     errorCard.style.display = 'none';
     refreshContainer.style.display = 'block';
 
-    // Get favorites for sorting
+    // Get favorites and config for sorting
     const favoriteAtcoCodes = FavoritesManager.getAtcoCodes();
     const favoriteCrsCodes = FavoritesManager.getCrsCodes();
+    const config = getConfig();
+    const nearbyThreshold = config.busStops.nearbyPriorityRadius;
 
-    // Sort: favorites first, then by distance
+    // Sort: nearby stops first, then favorites, then by distance
+    // A nearby non-favorite beats a distant favorite
     const sorted = [...items].sort((a, b) => {
         const aIsFav =
             (a.type === 'bus' && favoriteAtcoCodes.has(a.data.stop.atcoCode)) ||
@@ -239,12 +242,24 @@ export function displayItems(
             (b.type === 'bus' && favoriteAtcoCodes.has(b.data.stop.atcoCode)) ||
             (b.type === 'train' && favoriteCrsCodes.has(b.data.station.crsCode));
 
-        // Favorites first
-        if (aIsFav && !bIsFav) return -1;
-        if (!aIsFav && bIsFav) return 1;
+        const aDistance = getItemDistance(a);
+        const bDistance = getItemDistance(b);
+        const aIsNearby = aDistance <= nearbyThreshold;
+        const bIsNearby = bDistance <= nearbyThreshold;
 
-        // Then by distance
-        return getItemDistance(a) - getItemDistance(b);
+        // Both same favorite status: sort by distance
+        if (aIsFav === bIsFav) {
+            return aDistance - bDistance;
+        }
+
+        // One is favorite, one is not
+        // Nearby non-favorite beats distant favorite
+        if (!aIsFav && aIsNearby && !bIsNearby) return -1;
+        if (!bIsFav && bIsNearby && !aIsNearby) return 1;
+
+        // Otherwise favorites first
+        if (aIsFav) return -1;
+        return 1;
     });
 
     // Render items

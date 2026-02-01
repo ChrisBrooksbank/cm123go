@@ -34,6 +34,7 @@ describe('geocoding', () => {
                     longitude: 0.469,
                 },
                 maxDistanceFromCenter: 10000,
+                nearbyPriorityRadius: 150,
             },
             trainStations: {
                 railDataApiUrl:

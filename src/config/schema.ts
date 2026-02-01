@@ -63,6 +63,8 @@ export const ConfigSchema = z.object({
                 .default({}),
             /** Maximum distance from Chelmsford center before requiring postcode (meters) */
             maxDistanceFromCenter: z.number().positive().default(10000),
+            /** Distance threshold (meters) within which nearby stops rank above distant favorites */
+            nearbyPriorityRadius: z.number().nonnegative().default(150),
         })
         .default({}),
     trainStations: z
