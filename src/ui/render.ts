@@ -168,9 +168,9 @@ function renderTrainStationCard(board: TrainDepartureBoard, errorMessage?: strin
 
     return `
         <div class="card train-station-card" data-crs-code="${station.crsCode}">
-            <svg class="national-rail-logo" viewBox="0 0 80 50" aria-label="National Rail" role="img">
-                <path d="M5 5 L35 5 L55 25 L35 45 L5 45 L25 25 Z" fill="#e00"/>
-                <path d="M75 5 L45 5 L25 25 L45 45 L75 45 L55 25 Z" fill="#e00"/>
+            <svg class="national-rail-logo" viewBox="0 0 34 20" aria-label="National Rail" role="img">
+                <path d="M0,0 L9,0 L16,10 L9,20 L0,20 L7,10Z" fill="#d70000"/>
+                <path d="M34,0 L25,0 L18,10 L25,20 L34,20 L27,10Z" fill="#d70000"/>
             </svg>
             <div class="stop-header">
                 <h2>${station.name}</h2>
