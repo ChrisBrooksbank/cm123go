@@ -236,15 +236,15 @@ export function displayItems(
     const config = getConfig();
     const nearbyThreshold = config.busStops.nearbyPriorityRadius;
 
+    const isFav = (item: DisplayItem): boolean =>
+        (item.type === 'bus' && favoriteAtcoCodes.has(item.data.stop.atcoCode)) ||
+        (item.type === 'train' && favoriteCrsCodes.has(item.data.station.crsCode));
+
     // Sort: nearby stops first, then favorites, then by distance
     // A nearby non-favorite beats a distant favorite
     const sorted = [...items].sort((a, b) => {
-        const aIsFav =
-            (a.type === 'bus' && favoriteAtcoCodes.has(a.data.stop.atcoCode)) ||
-            (a.type === 'train' && favoriteCrsCodes.has(a.data.station.crsCode));
-        const bIsFav =
-            (b.type === 'bus' && favoriteAtcoCodes.has(b.data.stop.atcoCode)) ||
-            (b.type === 'train' && favoriteCrsCodes.has(b.data.station.crsCode));
+        const aIsFav = isFav(a);
+        const bIsFav = isFav(b);
 
         const aDistance = getItemDistance(a);
         const bDistance = getItemDistance(b);
@@ -272,7 +272,6 @@ export function displayItems(
     // Add "Show more stops" button if applicable
     const reachedMax = hasReachedMaxRadius();
     if (hasMoreStops && !reachedMax) {
-        const config = getConfig();
         const currentRadius = getCurrentSearchRadius();
         const nextRadius = currentRadius + config.busStops.radiusIncrement;
         const displayRadius =
