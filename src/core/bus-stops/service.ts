@@ -10,7 +10,7 @@ import { BusStopCache } from './cache';
 import { BusStopError } from './errors';
 import { fetchChelmsfordBusStops } from '@api/naptan';
 import { fetchDeparturesForStop } from '@api/departures';
-import type { Coordinates, NearbyBusStop, DepartureBoard } from '@/types';
+import type { BusStop, Coordinates, NearbyBusStop, DepartureBoard } from '@/types';
 import { BusStopErrorCode } from '@/types';
 
 /**
@@ -83,6 +83,43 @@ function deduplicateBySharedLines(boards: DepartureBoard[]): DepartureBoard[] {
     }
 
     return result;
+}
+
+function normalizeSearchTerm(value: string): string {
+    return value.trim().toLowerCase();
+}
+
+function normalizeServiceTerm(value: string): string {
+    return value.replace(/\s+/g, '').toLowerCase();
+}
+
+function stopMatchesQuery(stop: BusStop, query: string): boolean {
+    const stopNameWithIndicator = [stop.commonName, stop.indicator].filter(Boolean).join(' ');
+    const standName =
+        stop.indicator && /^\d+[A-Za-z]?$/.test(stop.indicator)
+            ? `${stop.commonName} stand ${stop.indicator}`
+            : undefined;
+    const searchableParts = [
+        stop.commonName,
+        stop.indicator,
+        stopNameWithIndicator,
+        standName,
+        stop.street,
+        stop.locality,
+        stop.atcoCode,
+    ];
+
+    return searchableParts.some(part => part?.toLowerCase().includes(query));
+}
+
+function boardMatchesServiceQuery(board: DepartureBoard, query: string): boolean {
+    const serviceQuery = normalizeServiceTerm(query);
+    return board.departures.some(departure => {
+        const line = normalizeServiceTerm(departure.line);
+        const destination = departure.destination.toLowerCase();
+
+        return line.includes(serviceQuery) || destination.includes(query);
+    });
 }
 
 /**
@@ -159,6 +196,55 @@ export const BusStopService = {
         });
 
         return nearby;
+    },
+
+    /**
+     * Search nearby stops by stop name, street, locality, ATCO code, bus line, or destination.
+     * Results remain distance-based from the user's current location.
+     */
+    async searchNearbyStops(
+        location: Coordinates,
+        query: string,
+        maxResults = 8
+    ): Promise<DepartureBoard[]> {
+        const normalizedQuery = normalizeSearchTerm(query);
+        if (!normalizedQuery) return [];
+
+        const config = getConfig();
+        const serviceCandidateLimit = normalizedQuery.length === 1 ? 24 : 40;
+        const nearbyStops = await this.findNearest(
+            location,
+            500,
+            config.busStops.maxExpandedRadius
+        );
+
+        const stopMatches = nearbyStops.filter(stop => stopMatchesQuery(stop, normalizedQuery));
+        const stopMatchCodes = new Set(stopMatches.map(stop => stop.atcoCode));
+
+        const serviceCandidates = nearbyStops
+            .filter(stop => !stopMatchCodes.has(stop.atcoCode))
+            .slice(0, serviceCandidateLimit);
+
+        const [stopMatchBoards, serviceCandidateBoards] = await Promise.all([
+            Promise.all(
+                stopMatches.slice(0, maxResults).map(stop => this.getDeparturesForStop(stop))
+            ),
+            Promise.all(serviceCandidates.map(stop => this.getDeparturesForStop(stop))),
+        ]);
+
+        const serviceMatches = serviceCandidateBoards.filter(board =>
+            boardMatchesServiceQuery(board, normalizedQuery)
+        );
+
+        const seen = new Set<string>();
+        return [...stopMatchBoards, ...serviceMatches]
+            .filter(board => {
+                if (seen.has(board.stop.atcoCode)) return false;
+                seen.add(board.stop.atcoCode);
+                return true;
+            })
+            .sort((a, b) => a.stop.distanceMeters - b.stop.distanceMeters)
+            .slice(0, maxResults);
     },
 
     /**

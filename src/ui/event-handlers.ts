@@ -5,6 +5,7 @@
 
 import { getConfig } from '@/config';
 import { Logger } from '@/utils/logger';
+import { debounce } from '@/utils/helpers';
 import {
     BusStopService,
     TrainStationService,
@@ -13,6 +14,7 @@ import {
     setUserLocation,
 } from '@/core';
 import { FavoritesManager } from '@/utils/favorites';
+import { getDisplayFilters, setDisplayFilters } from '@/utils/display-filters';
 import { reverseGeocodeToPostcode } from '@/api';
 import { saveLocation, getSavedLocation } from '@/utils/location-storage';
 import type { DepartureBoard } from '@/types';
@@ -57,6 +59,7 @@ type SetupHandlersCallback = () => void;
 
 /** Stored callback for re-rendering */
 let setupHandlersCallback: SetupHandlersCallback = () => {};
+let activeSearchRequestId = 0;
 
 /**
  * Set the callback for setting up handlers after rendering
@@ -129,6 +132,127 @@ function setupShowMoreHandler(): void {
     if (!btn) return;
 
     btn.addEventListener('click', () => void handleShowMore());
+}
+
+/**
+ * Set up change handlers for transport display filters
+ */
+function setupFilterHandlers(): void {
+    const container = document.getElementById('departures-container');
+    if (!container) return;
+
+    container.removeEventListener('change', handleFilterChange);
+    container.addEventListener('change', handleFilterChange);
+}
+
+/**
+ * Set up lightweight bus/stop search
+ */
+function setupBusSearchHandler(): void {
+    const input = document.getElementById('bus-search-input');
+    const clearBtn = document.getElementById('bus-search-clear');
+
+    if (input instanceof HTMLInputElement) {
+        input.removeEventListener('input', handleBusSearchInput);
+        input.addEventListener('input', handleBusSearchInput);
+    }
+
+    if (clearBtn instanceof HTMLButtonElement) {
+        clearBtn.addEventListener('click', () => {
+            const searchInput = document.getElementById('bus-search-input');
+            if (searchInput instanceof HTMLInputElement) {
+                searchInput.value = '';
+                searchInput.focus();
+            }
+            void runBusSearch('');
+        });
+    }
+}
+
+const runDebouncedBusSearch = debounce((query: string) => {
+    void runBusSearch(query);
+}, 350);
+
+function handleBusSearchInput(e: Event): void {
+    const target = e.target;
+    if (!(target instanceof HTMLInputElement)) return;
+
+    runDebouncedBusSearch(target.value);
+}
+
+async function runBusSearch(rawQuery: string): Promise<void> {
+    const query = rawQuery.trim();
+    const requestId = ++activeSearchRequestId;
+    const container = document.getElementById('departures-container');
+
+    if (!query) {
+        if (container) {
+            container.setAttribute('aria-busy', 'false');
+        }
+        displayItems(getAllDisplayItems(), !hasReachedMaxRadius(), setupHandlersCallback);
+        announceStatus('Bus search cleared');
+        return;
+    }
+
+    const userLocation = getUserLocation();
+    if (!userLocation) return;
+
+    if (container) {
+        container.setAttribute('aria-busy', 'true');
+    }
+    announceStatus('Searching buses and stops');
+
+    try {
+        const boards = await BusStopService.searchNearbyStops(userLocation, query);
+        if (requestId !== activeSearchRequestId) return;
+
+        const items: DisplayItem[] = boards.map(board => ({ type: 'bus', data: board }));
+        displayItems(items, false, setupHandlersCallback, {
+            preserveStoredItems: true,
+            searchQuery: query,
+            isSearchMode: true,
+        });
+        announceStatus(`Found ${items.length} bus search result${items.length === 1 ? '' : 's'}`);
+    } catch (error) {
+        Logger.warn('Bus search failed', error);
+        if (requestId !== activeSearchRequestId) return;
+
+        displayItems([], false, setupHandlersCallback, {
+            preserveStoredItems: true,
+            searchQuery: query,
+            isSearchMode: true,
+        });
+        announceStatus('No bus search results found');
+    } finally {
+        if (requestId === activeSearchRequestId && container) {
+            container.setAttribute('aria-busy', 'false');
+        }
+    }
+}
+
+/**
+ * Handle transport display filter changes
+ */
+function handleFilterChange(e: Event): void {
+    const target = e.target;
+    if (!(target instanceof HTMLInputElement) || !target.matches('[data-filter]')) {
+        return;
+    }
+
+    const filter = target.getAttribute('data-filter');
+    const currentFilters = getDisplayFilters();
+
+    if (filter === 'bus') {
+        setDisplayFilters({ ...currentFilters, bus: target.checked });
+    } else if (filter === 'train') {
+        setDisplayFilters({ ...currentFilters, train: target.checked });
+    } else {
+        return;
+    }
+
+    triggerHapticFeedback();
+    announceStatus('Departure filters updated');
+    displayItems(getAllDisplayItems(), !hasReachedMaxRadius(), setupHandlersCallback);
 }
 
 /**
@@ -355,6 +479,8 @@ export async function handleRefresh(): Promise<void> {
  */
 export function setupAllHandlers(): void {
     setupFavoriteHandlers();
+    setupFilterHandlers();
+    setupBusSearchHandler();
     setupShowMoreHandler();
 }
 
