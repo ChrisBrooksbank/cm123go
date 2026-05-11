@@ -9,3 +9,6 @@ coverage/
 *.config.json
 !*.config.example.json
 .claude/
+
+# Local Netlify folder
+.netlify
