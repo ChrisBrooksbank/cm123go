@@ -1,5 +1,5 @@
 [build]
-  command = "chmod +x scripts/create-config.sh && ./scripts/create-config.sh && npm run build"
+  command = "node scripts/create-config.mjs && npm run build"
   publish = "dist"
 
 [build.environment]
