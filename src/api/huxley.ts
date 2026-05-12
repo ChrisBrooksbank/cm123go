@@ -8,6 +8,7 @@
 
 import { Logger } from '@utils/logger';
 import { resilientFetch, CircuitOpenError } from '@utils/helpers';
+import { fetchWithTimeout } from '@utils/fetch-timeout';
 import { getConfig } from '@config/index';
 import type { TrainDeparture } from '@/types';
 
@@ -67,11 +68,15 @@ export async function fetchTrainDepartures(
             'raildata',
             crsCode,
             async () => {
-                const res = await fetch(url, {
-                    headers: {
-                        'x-apikey': railDataApiKey,
+                const res = await fetchWithTimeout(
+                    url,
+                    {
+                        headers: {
+                            'x-apikey': railDataApiKey,
+                        },
                     },
-                });
+                    8000
+                );
 
                 if (!res.ok) {
                     throw new Error(`Rail Data API error: ${res.status}`);

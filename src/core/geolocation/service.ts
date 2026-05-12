@@ -60,7 +60,38 @@ export const GeolocationService = {
         Logger.info('Requesting location from browser', mergedOptions);
 
         try {
-            const result = await getCurrentPosition(mergedOptions);
+            let result: Awaited<ReturnType<typeof getCurrentPosition>>;
+            try {
+                result = await getCurrentPosition(mergedOptions);
+            } catch (error) {
+                const geoError =
+                    error instanceof GeolocationError
+                        ? error
+                        : new GeolocationError(
+                              String(error),
+                              GeolocationErrorCode.POSITION_UNAVAILABLE
+                          );
+
+                if (
+                    !mergedOptions.enableHighAccuracy ||
+                    geoError.isPermissionDenied() ||
+                    geoError.isNotSupported()
+                ) {
+                    throw geoError;
+                }
+
+                Logger.warn('High accuracy location failed, retrying with network accuracy', {
+                    code: geoError.code,
+                    message: geoError.message,
+                });
+
+                result = await getCurrentPosition({
+                    ...mergedOptions,
+                    enableHighAccuracy: false,
+                    timeout: Math.min(mergedOptions.timeout ?? 10000, 8000),
+                    maximumAge: Math.max(mergedOptions.maximumAge ?? 60000, 300000),
+                });
+            }
 
             const location: Location = {
                 coordinates: result.coordinates,

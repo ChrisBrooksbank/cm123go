@@ -38,16 +38,30 @@ export function getCurrentPosition(options: GeolocationOptions = {}): Promise<{
             return;
         }
 
+        const timeoutMs = options.timeout ?? 10000;
         const positionOptions: PositionOptions = {
             enableHighAccuracy: options.enableHighAccuracy ?? true,
-            timeout: options.timeout ?? 10000,
+            timeout: timeoutMs,
             maximumAge: options.maximumAge ?? 60000,
         };
 
         Logger.debug('Requesting browser geolocation', positionOptions);
 
+        let settled = false;
+        const fallbackTimeoutId = setTimeout(() => {
+            if (settled) return;
+            settled = true;
+            Logger.warn('Browser geolocation timed out without callback');
+            reject(
+                new GeolocationError('Location request timed out', GeolocationErrorCode.TIMEOUT)
+            );
+        }, timeoutMs + 1000);
+
         navigator.geolocation.getCurrentPosition(
             position => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(fallbackTimeoutId);
                 Logger.success('Browser geolocation succeeded', {
                     accuracy: position.coords.accuracy,
                 });
@@ -60,6 +74,9 @@ export function getCurrentPosition(options: GeolocationOptions = {}): Promise<{
                 });
             },
             error => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(fallbackTimeoutId);
                 Logger.warn('Browser geolocation failed', {
                     code: error.code,
                     message: error.message,

@@ -8,6 +8,7 @@
 
 import { Logger } from '@utils/logger';
 import { retryWithBackoff } from '@utils/helpers';
+import { fetchWithTimeout } from '@utils/fetch-timeout';
 import { formatTimeHHMMSS } from '@utils/time';
 import { getConfig } from '@config/index';
 import type { GTFSStopTime, GTFSTrip, GTFSRoute } from '@/types';
@@ -39,7 +40,7 @@ async function loadGTFSData(): Promise<GTFSData> {
 
     const response = await retryWithBackoff(
         async () => {
-            const res = await fetch('/gtfs-chelmsford.json');
+            const res = await fetchWithTimeout('/gtfs-chelmsford.json', {}, 8000);
             if (!res.ok) {
                 throw new Error(`Failed to load GTFS data: ${res.status}`);
             }
@@ -139,7 +140,7 @@ export interface ScheduledDeparture {
  */
 export async function isGTFSDataAvailable(): Promise<boolean> {
     try {
-        const res = await fetch('/gtfs-chelmsford.json', { method: 'HEAD' });
+        const res = await fetchWithTimeout('/gtfs-chelmsford.json', { method: 'HEAD' }, 5000);
         return res.ok;
     } catch {
         return false;

@@ -244,15 +244,24 @@ function renderDisplayFilters(filters: DisplayFilters): string {
 /**
  * Render the lightweight bus search box
  */
-function renderBusSearch(searchQuery = '', isSearchMode = false): string {
+function renderBusSearch(
+    searchQuery = '',
+    isSearchMode = false,
+    isExpanded = false,
+    isBusy = false
+): string {
     const escapedQuery = escapeHtml(searchQuery);
     const clearButton = isSearchMode
         ? '<button id="bus-search-clear" class="bus-search-clear" type="button" aria-label="Clear bus search">Clear</button>'
         : '';
-
-    return `
-        <div class="bus-search">
-            <label for="bus-search-input">Search buses or stops</label>
+    const expanded = isExpanded || isSearchMode || isBusy;
+    const expandedClass = expanded ? ' expanded' : '';
+    const busyClass = isBusy ? ' searching' : '';
+    const busyMarkup = isBusy
+        ? '<p id="bus-search-status" class="bus-search-status"><span class="spinner" aria-hidden="true"></span>Searching buses and stops...</p>'
+        : '<p id="bus-search-status" class="bus-search-status" hidden></p>';
+    const inputMarkup = expanded
+        ? `
             <div class="bus-search-row">
                 <input
                     id="bus-search-input"
@@ -262,9 +271,26 @@ function renderBusSearch(searchQuery = '', isSearchMode = false): string {
                     autocomplete="off"
                     autocorrect="off"
                     spellcheck="false"
+                    aria-describedby="bus-search-status"
                 />
                 ${clearButton}
             </div>
+            ${busyMarkup}
+        `
+        : '';
+
+    return `
+        <div class="bus-search${expandedClass}${busyClass}">
+            <button
+                id="bus-search-toggle"
+                class="bus-search-toggle"
+                type="button"
+                aria-expanded="${expanded ? 'true' : 'false'}"
+                aria-controls="bus-search-input"
+            >
+                Search buses or stops
+            </button>
+            ${inputMarkup}
         </div>
     `;
 }
@@ -297,6 +323,8 @@ interface DisplayItemsOptions {
     preserveStoredItems?: boolean;
     searchQuery?: string;
     isSearchMode?: boolean;
+    isSearchExpanded?: boolean;
+    isSearchBusy?: boolean;
 }
 
 /**
@@ -363,9 +391,16 @@ export function displayItems(
     const filters = getDisplayFilters();
 
     // Render search, filter controls, and matching items
-    let html = renderBusSearch(options.searchQuery, options.isSearchMode);
+    let html = renderBusSearch(
+        options.searchQuery,
+        options.isSearchMode,
+        options.isSearchExpanded,
+        options.isSearchBusy
+    );
     if (options.isSearchMode) {
-        html += `<p class="search-summary">Showing nearest bus matches for "${escapeHtml(options.searchQuery ?? '')}"</p>`;
+        html += `<p class="search-summary">Showing nearest bus matches for "${escapeHtml(
+            options.searchQuery ?? ''
+        )}"</p>`;
         html += renderFilteredItems(
             sorted,
             { bus: true, train: false },
@@ -441,7 +476,11 @@ export function displayError(message: string): void {
 /**
  * Show manual postcode entry form with a message
  */
-export function showPostcodeEntryForm(message: string, defaultPostcode?: string): void {
+export function showPostcodeEntryForm(
+    message: string,
+    defaultPostcode?: string,
+    shouldFocus = true
+): void {
     const postcodeDisplay = document.getElementById('postcode-display');
     const postcodeForm = document.getElementById('postcode-form');
     const postcodeInput = document.getElementById('postcode-input') as HTMLInputElement | null;
@@ -455,8 +494,9 @@ export function showPostcodeEntryForm(message: string, defaultPostcode?: string)
     if (postcodeInput && defaultPostcode) {
         postcodeInput.value = defaultPostcode;
     }
-    // Focus the input for keyboard users
-    postcodeInput?.focus();
+    if (shouldFocus) {
+        postcodeInput?.focus();
+    }
 }
 
 /**

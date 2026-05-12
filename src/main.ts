@@ -363,6 +363,23 @@ function setupThemeButton(): void {
     });
 }
 
+function showPostcodeFallbackIfLocationIsSlow(): () => void {
+    let locationStillPending = true;
+    const timeoutId = setTimeout(() => {
+        if (!locationStillPending) return;
+        showPostcodeEntryForm(
+            'Location is taking a while. Enter postcode instead:',
+            lastSuccessfulPostcode ?? undefined,
+            false
+        );
+    }, 4000);
+
+    return () => {
+        locationStillPending = false;
+        clearTimeout(timeoutId);
+    };
+}
+
 /**
  * Initialize the application
  */
@@ -414,7 +431,9 @@ async function init(): Promise<void> {
         BusStopService.init().catch(err => Logger.warn('Bus stop init failed', err));
 
         // Get browser location
+        const clearSlowLocationFallback = showPostcodeFallbackIfLocationIsSlow();
         const result = await GeolocationService.getLocationFromBrowser();
+        clearSlowLocationFallback();
 
         if (!result.success) {
             // Try to use saved location as fallback
@@ -463,6 +482,7 @@ async function init(): Promise<void> {
 
         // Store location in state
         setUserLocation(result.location.coordinates);
+        hidePostcodeForm();
 
         // Reverse geocode to get postcode
         updatePostcodeDisplay(

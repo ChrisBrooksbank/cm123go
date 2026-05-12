@@ -117,7 +117,11 @@ describe('geocoding', () => {
 
             await geocodePostcode('cm1 1ab');
 
-            expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('CM11AB'));
+            const fetchMock = vi.mocked(global.fetch);
+            const [url, init] = fetchMock.mock.calls[0];
+            expect(url).toEqual(expect.stringContaining('CM11AB'));
+            expect(init).toBeDefined();
+            expect((init as RequestInit).signal).toBeInstanceOf(AbortSignal);
         });
 
         it('should throw GeolocationError for invalid postcode format', async () => {

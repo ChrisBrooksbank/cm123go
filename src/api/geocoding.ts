@@ -6,6 +6,7 @@
 import { z } from 'zod';
 import { Logger } from '@utils/logger';
 import { retryWithBackoff } from '@utils/helpers';
+import { fetchWithTimeout } from '@utils/fetch-timeout';
 import { getConfig } from '@config/index';
 import { GeolocationError } from '@core/geolocation/errors';
 import type { Coordinates } from '@/types';
@@ -62,7 +63,7 @@ export async function geocodePostcode(postcode: string): Promise<{
     try {
         const response = await retryWithBackoff(
             async () => {
-                const res = await fetch(url);
+                const res = await fetchWithTimeout(url, {}, 8000);
                 if (!res.ok) {
                     if (res.status === 404) {
                         throw new GeolocationError(
@@ -165,7 +166,7 @@ export async function reverseGeocodeToPostcode(coordinates: Coordinates): Promis
     try {
         const response = await retryWithBackoff(
             async () => {
-                const res = await fetch(url);
+                const res = await fetchWithTimeout(url, {}, 8000);
                 if (!res.ok) {
                     throw new Error(`API error: ${res.status}`);
                 }

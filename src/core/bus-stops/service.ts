@@ -86,40 +86,93 @@ function deduplicateBySharedLines(boards: DepartureBoard[]): DepartureBoard[] {
 }
 
 function normalizeSearchTerm(value: string): string {
-    return value.trim().toLowerCase();
+    return value
+        .trim()
+        .toLowerCase()
+        .replace(/\b(bus|route|service|number|no)\b/g, ' ')
+        .replace(/[^\da-z]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
 }
 
 function normalizeServiceTerm(value: string): string {
-    return value.replace(/\s+/g, '').toLowerCase();
+    return normalizeSearchTerm(value).replace(/\s+/g, '');
 }
 
-function stopMatchesQuery(stop: BusStop, query: string): boolean {
+function isRouteLikeQuery(query: string): boolean {
+    return /^[a-z]?\d+[a-z]?$/.test(normalizeServiceTerm(query));
+}
+
+function getIndicatorMatchScore(indicator: string | undefined, query: string): number {
+    if (!indicator) return 0;
+
+    const normalizedIndicator = normalizeSearchTerm(indicator);
+    const indicatorToken = normalizeServiceTerm(indicator);
+    const queryToken = normalizeServiceTerm(query);
+    const indicatorParts = normalizedIndicator.split(' ');
+
+    if (indicatorToken === queryToken) return 125;
+    if (indicatorParts.includes(queryToken)) return 115;
+    if (indicatorToken.endsWith(queryToken) && queryToken.length >= 2) return 95;
+
+    return 0;
+}
+
+function getStopMatchScore(stop: BusStop, query: string): number {
     const stopNameWithIndicator = [stop.commonName, stop.indicator].filter(Boolean).join(' ');
     const standName =
         stop.indicator && /^\d+[A-Za-z]?$/.test(stop.indicator)
             ? `${stop.commonName} stand ${stop.indicator}`
             : undefined;
+    const routeLikeQuery = isRouteLikeQuery(query);
+
+    if (routeLikeQuery) {
+        const indicatorScore = getIndicatorMatchScore(stop.indicator, query);
+        if (indicatorScore > 0) return indicatorScore;
+    }
+
     const searchableParts = [
         stop.commonName,
-        stop.indicator,
         stopNameWithIndicator,
         standName,
         stop.street,
         stop.locality,
-        stop.atcoCode,
+        routeLikeQuery ? undefined : stop.atcoCode,
     ];
 
-    return searchableParts.some(part => part?.toLowerCase().includes(query));
+    return searchableParts.reduce((bestScore, part) => {
+        const normalizedPart = normalizeSearchTerm(part ?? '');
+        if (!normalizedPart) return bestScore;
+        if (normalizedPart === query) return Math.max(bestScore, 120);
+        if (normalizedPart.startsWith(query)) return Math.max(bestScore, 100);
+        if (routeLikeQuery && query.length === 1) return bestScore;
+        if (normalizedPart.includes(query)) return Math.max(bestScore, 80);
+        return bestScore;
+    }, 0);
 }
 
-function boardMatchesServiceQuery(board: DepartureBoard, query: string): boolean {
+function getServiceMatchScore(board: DepartureBoard, query: string): number {
     const serviceQuery = normalizeServiceTerm(query);
-    return board.departures.some(departure => {
+    return board.departures.reduce((bestScore, departure) => {
         const line = normalizeServiceTerm(departure.line);
-        const destination = departure.destination.toLowerCase();
+        const destination = normalizeSearchTerm(departure.destination);
 
-        return line.includes(serviceQuery) || destination.includes(query);
-    });
+        if (line === serviceQuery) return Math.max(bestScore, 110);
+        if (serviceQuery.length >= 2 && line.startsWith(serviceQuery)) {
+            return Math.max(bestScore, 90);
+        }
+        if (!isRouteLikeQuery(query) && destination.startsWith(query)) {
+            return Math.max(bestScore, 70);
+        }
+        if (!isRouteLikeQuery(query) && destination.includes(query)) {
+            return Math.max(bestScore, 60);
+        }
+        if (serviceQuery.length >= 2 && line.includes(serviceQuery)) {
+            return Math.max(bestScore, 50);
+        }
+
+        return bestScore;
+    }, 0);
 }
 
 /**
@@ -211,15 +264,28 @@ export const BusStopService = {
         if (!normalizedQuery) return [];
 
         const config = getConfig();
-        const serviceCandidateLimit = normalizedQuery.length === 1 ? 24 : 40;
+        const routeLikeQuery = isRouteLikeQuery(normalizedQuery);
         const nearbyStops = await this.findNearest(
             location,
             500,
             config.busStops.maxExpandedRadius
         );
 
-        const stopMatches = nearbyStops.filter(stop => stopMatchesQuery(stop, normalizedQuery));
-        const stopMatchCodes = new Set(stopMatches.map(stop => stop.atcoCode));
+        const stopMatches = nearbyStops
+            .map(stop => ({
+                stop,
+                score: getStopMatchScore(stop, normalizedQuery),
+            }))
+            .filter(match => match.score > 0)
+            .sort((a, b) => b.score - a.score || a.stop.distanceMeters - b.stop.distanceMeters);
+        const stopMatchCodes = new Set(stopMatches.map(match => match.stop.atcoCode));
+        const serviceCandidateLimit = routeLikeQuery
+            ? normalizedQuery.length === 1
+                ? 24
+                : 50
+            : stopMatches.length >= maxResults
+              ? 0
+              : 40;
 
         const serviceCandidates = nearbyStops
             .filter(stop => !stopMatchCodes.has(stop.atcoCode))
@@ -227,23 +293,35 @@ export const BusStopService = {
 
         const [stopMatchBoards, serviceCandidateBoards] = await Promise.all([
             Promise.all(
-                stopMatches.slice(0, maxResults).map(stop => this.getDeparturesForStop(stop))
+                stopMatches.slice(0, maxResults).map(match => this.getDeparturesForStop(match.stop))
             ),
             Promise.all(serviceCandidates.map(stop => this.getDeparturesForStop(stop))),
         ]);
 
-        const serviceMatches = serviceCandidateBoards.filter(board =>
-            boardMatchesServiceQuery(board, normalizedQuery)
-        );
+        const scoredStopBoards = stopMatchBoards.map(board => ({
+            board,
+            score:
+                stopMatches.find(match => match.stop.atcoCode === board.stop.atcoCode)?.score ?? 0,
+        }));
+        const scoredServiceBoards = serviceCandidateBoards
+            .map(board => ({
+                board,
+                score: getServiceMatchScore(board, normalizedQuery),
+            }))
+            .filter(match => match.score > 0);
 
         const seen = new Set<string>();
-        return [...stopMatchBoards, ...serviceMatches]
+        return [...scoredStopBoards, ...scoredServiceBoards]
             .filter(board => {
-                if (seen.has(board.stop.atcoCode)) return false;
-                seen.add(board.stop.atcoCode);
+                if (seen.has(board.board.stop.atcoCode)) return false;
+                seen.add(board.board.stop.atcoCode);
                 return true;
             })
-            .sort((a, b) => a.stop.distanceMeters - b.stop.distanceMeters)
+            .sort(
+                (a, b) =>
+                    b.score - a.score || a.board.stop.distanceMeters - b.board.stop.distanceMeters
+            )
+            .map(match => match.board)
             .slice(0, maxResults);
     },
 

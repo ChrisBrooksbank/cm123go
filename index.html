@@ -532,18 +532,36 @@
             }
             .bus-search {
                 margin: 0 0 1rem;
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
             }
-            .bus-search label {
-                display: block;
+            .bus-search-toggle {
+                min-height: 44px;
+                padding: 0.5rem 0.75rem;
+                border: 1px solid var(--color-border-strong);
+                border-radius: var(--radius-md);
+                background: var(--color-card);
+                color: var(--color-text);
+                cursor: pointer;
                 font-size: 0.875rem;
                 font-weight: 600;
+                transition:
+                    background-color 0.15s ease,
+                    border-color 0.15s ease;
+            }
+            .bus-search-toggle:hover,
+            .bus-search.expanded .bus-search-toggle {
+                background: var(--color-border);
+                border-color: var(--color-text-muted);
                 color: var(--color-text-strong);
-                margin-bottom: 0.35rem;
             }
             .bus-search-row {
                 display: flex;
                 gap: 0.5rem;
                 align-items: center;
+                width: 100%;
             }
             #bus-search-input {
                 flex: 1;
@@ -559,6 +577,9 @@
             #bus-search-input::placeholder {
                 color: var(--color-text-muted);
             }
+            .bus-search.searching #bus-search-input {
+                padding-right: 2.25rem;
+            }
             .bus-search-clear {
                 min-height: 44px;
                 padding: 0.5rem 0.75rem;
@@ -572,6 +593,18 @@
             }
             .bus-search-clear:hover {
                 background: var(--color-border);
+            }
+            .bus-search-status {
+                margin: -0.15rem 0 0;
+                color: var(--color-text-muted);
+                font-size: 0.875rem;
+                line-height: 1.4;
+            }
+            .bus-search-status .spinner {
+                width: 14px;
+                height: 14px;
+                border-width: 2px;
+                margin-right: 0.35rem;
             }
             .search-summary {
                 margin: -0.25rem 0 1rem;

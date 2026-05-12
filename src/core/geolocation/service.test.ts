@@ -161,6 +161,47 @@ describe('GeolocationService', () => {
                 expect(result.requiresManualEntry).toBe(true);
             }
         });
+
+        it('should retry with lower accuracy when high accuracy times out', async () => {
+            const mockPosition = {
+                coords: {
+                    latitude: 51.7356,
+                    longitude: 0.4685,
+                    accuracy: 250,
+                },
+            };
+            const calls: PositionOptions[] = [];
+
+            vi.stubGlobal('navigator', {
+                geolocation: {
+                    getCurrentPosition: (
+                        success: PositionCallback,
+                        error: PositionErrorCallback,
+                        options: PositionOptions
+                    ) => {
+                        calls.push(options);
+                        if (calls.length === 1) {
+                            error({
+                                code: 3,
+                                message: 'Timed out',
+                                PERMISSION_DENIED: 1,
+                                POSITION_UNAVAILABLE: 2,
+                                TIMEOUT: 3,
+                            });
+                            return;
+                        }
+                        success(mockPosition as GeolocationPosition);
+                    },
+                },
+            });
+
+            const result = await GeolocationService.getLocationFromBrowser();
+
+            expect(result.success).toBe(true);
+            expect(calls).toHaveLength(2);
+            expect(calls[0].enableHighAccuracy).toBe(true);
+            expect(calls[1].enableHighAccuracy).toBe(false);
+        });
     });
 
     describe('getLocationFromPostcode', () => {

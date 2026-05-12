@@ -60,6 +60,10 @@ type SetupHandlersCallback = () => void;
 /** Stored callback for re-rendering */
 let setupHandlersCallback: SetupHandlersCallback = () => {};
 let activeSearchRequestId = 0;
+let isSearchExpanded = false;
+let isSearchBusy = false;
+let currentSearchQuery = '';
+let currentSearchItems: DisplayItem[] = [];
 
 /**
  * Set the callback for setting up handlers after rendering
@@ -121,7 +125,21 @@ function handleFavoriteClick(e: Event): void {
     announceStatus(isNowFavorite ? `${name} added to favorites` : `${name} removed from favorites`);
 
     // Re-render to reorder (favorites at top)
-    displayItems(getAllDisplayItems(), !hasReachedMaxRadius(), setupHandlersCallback);
+    if (currentSearchQuery) {
+        displayItems(
+            currentSearchItems,
+            false,
+            setupHandlersCallback,
+            getSearchDisplayOptions(true)
+        );
+    } else {
+        displayItems(
+            getAllDisplayItems(),
+            !hasReachedMaxRadius(),
+            setupHandlersCallback,
+            getSearchDisplayOptions(false)
+        );
+    }
 }
 
 /**
@@ -149,8 +167,13 @@ function setupFilterHandlers(): void {
  * Set up lightweight bus/stop search
  */
 function setupBusSearchHandler(): void {
+    const toggleBtn = document.getElementById('bus-search-toggle');
     const input = document.getElementById('bus-search-input');
     const clearBtn = document.getElementById('bus-search-clear');
+
+    if (toggleBtn instanceof HTMLButtonElement) {
+        toggleBtn.addEventListener('click', handleBusSearchToggle);
+    }
 
     if (input instanceof HTMLInputElement) {
         input.removeEventListener('input', handleBusSearchInput);
@@ -169,6 +192,59 @@ function setupBusSearchHandler(): void {
     }
 }
 
+function getSearchDisplayOptions(isSearchMode: boolean): {
+    preserveStoredItems: boolean;
+    searchQuery: string;
+    isSearchMode: boolean;
+    isSearchExpanded: boolean;
+    isSearchBusy: boolean;
+} {
+    return {
+        preserveStoredItems: isSearchMode,
+        searchQuery: currentSearchQuery,
+        isSearchMode,
+        isSearchExpanded,
+        isSearchBusy,
+    };
+}
+
+function handleBusSearchToggle(): void {
+    if (!isSearchExpanded) {
+        isSearchExpanded = true;
+        displayItems(
+            getAllDisplayItems(),
+            !hasReachedMaxRadius(),
+            setupHandlersCallback,
+            getSearchDisplayOptions(false)
+        );
+    }
+
+    const input = document.getElementById('bus-search-input');
+    if (input instanceof HTMLInputElement) {
+        input.focus();
+    }
+}
+
+function setSearchBusyIndicator(busy: boolean): void {
+    isSearchBusy = busy;
+
+    const search = document.querySelector('.bus-search');
+    const status = document.getElementById('bus-search-status');
+    const input = document.getElementById('bus-search-input');
+
+    search?.classList.toggle('searching', busy);
+    if (input instanceof HTMLInputElement) {
+        input.setAttribute('aria-busy', String(busy));
+    }
+
+    if (status) {
+        status.hidden = !busy;
+        status.innerHTML = busy
+            ? '<span class="spinner" aria-hidden="true"></span>Searching buses and stops...'
+            : '';
+    }
+}
+
 const runDebouncedBusSearch = debounce((query: string) => {
     void runBusSearch(query);
 }, 350);
@@ -177,6 +253,12 @@ function handleBusSearchInput(e: Event): void {
     const target = e.target;
     if (!(target instanceof HTMLInputElement)) return;
 
+    currentSearchQuery = target.value.trim();
+    if (currentSearchQuery) {
+        setSearchBusyIndicator(true);
+        announceStatus('Searching buses and stops');
+    }
+
     runDebouncedBusSearch(target.value);
 }
 
@@ -184,12 +266,21 @@ async function runBusSearch(rawQuery: string): Promise<void> {
     const query = rawQuery.trim();
     const requestId = ++activeSearchRequestId;
     const container = document.getElementById('departures-container');
+    currentSearchQuery = query;
 
     if (!query) {
+        isSearchExpanded = false;
+        isSearchBusy = false;
+        currentSearchItems = [];
         if (container) {
             container.setAttribute('aria-busy', 'false');
         }
-        displayItems(getAllDisplayItems(), !hasReachedMaxRadius(), setupHandlersCallback);
+        displayItems(
+            getAllDisplayItems(),
+            !hasReachedMaxRadius(),
+            setupHandlersCallback,
+            getSearchDisplayOptions(false)
+        );
         announceStatus('Bus search cleared');
         return;
     }
@@ -200,6 +291,7 @@ async function runBusSearch(rawQuery: string): Promise<void> {
     if (container) {
         container.setAttribute('aria-busy', 'true');
     }
+    setSearchBusyIndicator(true);
     announceStatus('Searching buses and stops');
 
     try {
@@ -207,25 +299,22 @@ async function runBusSearch(rawQuery: string): Promise<void> {
         if (requestId !== activeSearchRequestId) return;
 
         const items: DisplayItem[] = boards.map(board => ({ type: 'bus', data: board }));
-        displayItems(items, false, setupHandlersCallback, {
-            preserveStoredItems: true,
-            searchQuery: query,
-            isSearchMode: true,
-        });
+        currentSearchItems = items;
+        isSearchBusy = false;
+        displayItems(items, false, setupHandlersCallback, getSearchDisplayOptions(true));
         announceStatus(`Found ${items.length} bus search result${items.length === 1 ? '' : 's'}`);
     } catch (error) {
         Logger.warn('Bus search failed', error);
         if (requestId !== activeSearchRequestId) return;
 
-        displayItems([], false, setupHandlersCallback, {
-            preserveStoredItems: true,
-            searchQuery: query,
-            isSearchMode: true,
-        });
+        currentSearchItems = [];
+        isSearchBusy = false;
+        displayItems([], false, setupHandlersCallback, getSearchDisplayOptions(true));
         announceStatus('No bus search results found');
     } finally {
         if (requestId === activeSearchRequestId && container) {
             container.setAttribute('aria-busy', 'false');
+            setSearchBusyIndicator(false);
         }
     }
 }
@@ -252,7 +341,12 @@ function handleFilterChange(e: Event): void {
 
     triggerHapticFeedback();
     announceStatus('Departure filters updated');
-    displayItems(getAllDisplayItems(), !hasReachedMaxRadius(), setupHandlersCallback);
+    displayItems(
+        getAllDisplayItems(),
+        !hasReachedMaxRadius(),
+        setupHandlersCallback,
+        getSearchDisplayOptions(false)
+    );
 }
 
 /**
@@ -309,7 +403,12 @@ async function handleShowMore(): Promise<void> {
                 if (showMoreContainer) showMoreContainer.remove();
             } else {
                 // Update button for next expansion
-                displayItems(getAllDisplayItems(), true, setupHandlersCallback);
+                displayItems(
+                    getAllDisplayItems(),
+                    true,
+                    setupHandlersCallback,
+                    getSearchDisplayOptions(false)
+                );
             }
             return;
         }
@@ -330,7 +429,12 @@ async function handleShowMore(): Promise<void> {
         addDisplayItems(newItems);
 
         // Re-render (button shows if not at max radius)
-        displayItems(getAllDisplayItems(), !hasReachedMaxRadius(), setupHandlersCallback);
+        displayItems(
+            getAllDisplayItems(),
+            !hasReachedMaxRadius(),
+            setupHandlersCallback,
+            getSearchDisplayOptions(false)
+        );
 
         // Announce results to screen readers
         announceStatus(
@@ -450,13 +554,19 @@ export async function handleRefresh(): Promise<void> {
             displayItems(
                 [...favBusItems, ...nearbyBusItems, ...trainItems],
                 true,
-                setupHandlersCallback
+                setupHandlersCallback,
+                getSearchDisplayOptions(false)
             );
         } else {
             // Still show favorites and train departures even if nearby bus data fails
             const favItems: DisplayItem[] = favoriteBoards.map(b => ({ type: 'bus', data: b }));
             if (favItems.length > 0 || trainItems.length > 0) {
-                displayItems([...favItems, ...trainItems], false, setupHandlersCallback);
+                displayItems(
+                    [...favItems, ...trainItems],
+                    false,
+                    setupHandlersCallback,
+                    getSearchDisplayOptions(false)
+                );
             } else {
                 displayError(busResult.error.getUserMessage());
             }

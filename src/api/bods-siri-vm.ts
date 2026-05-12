@@ -5,6 +5,7 @@
 
 import { Logger } from '@utils/logger';
 import { resilientFetch, CircuitOpenError } from '@utils/helpers';
+import { fetchWithTimeout } from '@utils/fetch-timeout';
 import { getConfig } from '@config/index';
 import { BusStopError } from '@core/bus-stops/errors';
 import { BusStopErrorCode } from '@/types';
@@ -127,7 +128,7 @@ async function fetchVehiclePositions(boundingBox: BoundingBox): Promise<VehicleA
             'bods-siri-vm',
             bbox,
             async () => {
-                const res = await fetch(url);
+                const res = await fetchWithTimeout(url, {}, 10000);
 
                 if (res.status === 429) {
                     throw new BusStopError(

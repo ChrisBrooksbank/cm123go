@@ -8,6 +8,7 @@
 
 import { Logger } from '@utils/logger';
 import { resilientFetch, CircuitOpenError } from '@utils/helpers';
+import { fetchWithTimeout } from '@utils/fetch-timeout';
 import { calculateMinutesUntil } from '@utils/time';
 import type { Departure } from '@/types';
 
@@ -66,7 +67,7 @@ export async function fetchFirstBusDepartures(atcoCode: string, limit = 3): Prom
             'first-bus',
             atcoCode,
             async () => {
-                const res = await fetch(url);
+                const res = await fetchWithTimeout(url, {}, 8000);
 
                 if (!res.ok) {
                     throw new Error(`First Bus API error: ${res.status}`);
