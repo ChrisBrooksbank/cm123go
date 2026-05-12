@@ -14,7 +14,6 @@ import {
     setUserLocation,
 } from '@/core';
 import { FavoritesManager } from '@/utils/favorites';
-import { getDisplayFilters, setDisplayFilters } from '@/utils/display-filters';
 import { reverseGeocodeToPostcode } from '@/api';
 import { saveLocation, getSavedLocation } from '@/utils/location-storage';
 import type { DepartureBoard } from '@/types';
@@ -150,17 +149,6 @@ function setupShowMoreHandler(): void {
     if (!btn) return;
 
     btn.addEventListener('click', () => void handleShowMore());
-}
-
-/**
- * Set up change handlers for transport display filters
- */
-function setupFilterHandlers(): void {
-    const container = document.getElementById('departures-container');
-    if (!container) return;
-
-    container.removeEventListener('change', handleFilterChange);
-    container.addEventListener('change', handleFilterChange);
 }
 
 /**
@@ -317,36 +305,6 @@ async function runBusSearch(rawQuery: string): Promise<void> {
             setSearchBusyIndicator(false);
         }
     }
-}
-
-/**
- * Handle transport display filter changes
- */
-function handleFilterChange(e: Event): void {
-    const target = e.target;
-    if (!(target instanceof HTMLInputElement) || !target.matches('[data-filter]')) {
-        return;
-    }
-
-    const filter = target.getAttribute('data-filter');
-    const currentFilters = getDisplayFilters();
-
-    if (filter === 'bus') {
-        setDisplayFilters({ ...currentFilters, bus: target.checked });
-    } else if (filter === 'train') {
-        setDisplayFilters({ ...currentFilters, train: target.checked });
-    } else {
-        return;
-    }
-
-    triggerHapticFeedback();
-    announceStatus('Departure filters updated');
-    displayItems(
-        getAllDisplayItems(),
-        !hasReachedMaxRadius(),
-        setupHandlersCallback,
-        getSearchDisplayOptions(false)
-    );
 }
 
 /**
@@ -589,7 +547,6 @@ export async function handleRefresh(): Promise<void> {
  */
 export function setupAllHandlers(): void {
     setupFavoriteHandlers();
-    setupFilterHandlers();
     setupBusSearchHandler();
     setupShowMoreHandler();
 }

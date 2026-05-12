@@ -6,7 +6,6 @@
 import { getConfig } from '@/config';
 import { getDirectionsUrl } from '@/utils/maps-link';
 import { FavoritesManager } from '@/utils/favorites';
-import { getDisplayFilters, type DisplayFilters } from '@/utils/display-filters';
 import type { Departure, DepartureBoard, TrainDeparture, TrainDepartureBoard } from '@/types';
 import {
     type DisplayItem,
@@ -220,28 +219,6 @@ function getItemDistance(item: DisplayItem): number {
 }
 
 /**
- * Render transport filter controls
- */
-function renderDisplayFilters(filters: DisplayFilters): string {
-    const busChecked = filters.bus ? 'checked' : '';
-    const trainChecked = filters.train ? 'checked' : '';
-
-    return `
-        <fieldset class="filter-controls" aria-label="Filter departures">
-            <legend>Show</legend>
-            <label class="filter-toggle">
-                <input type="checkbox" data-filter="bus" ${busChecked} />
-                <span>Buses</span>
-            </label>
-            <label class="filter-toggle">
-                <input type="checkbox" data-filter="train" ${trainChecked} />
-                <span>Trains</span>
-            </label>
-        </fieldset>
-    `;
-}
-
-/**
  * Render the lightweight bus search box
  */
 function renderBusSearch(
@@ -296,27 +273,14 @@ function renderBusSearch(
 }
 
 /**
- * Check whether an item is visible under the selected filters
+ * Render the cards and empty state
  */
-function isItemVisible(item: DisplayItem, filters: DisplayFilters): boolean {
-    return item.type === 'bus' ? filters.bus : filters.train;
-}
-
-/**
- * Render the cards and empty state for the selected filters
- */
-function renderFilteredItems(
-    items: DisplayItem[],
-    filters: DisplayFilters,
-    emptyMessage = 'No departures match your filters'
-): string {
-    const visibleItems = items.filter(item => isItemVisible(item, filters));
-
-    if (visibleItems.length === 0) {
+function renderItems(items: DisplayItem[], emptyMessage = 'No departures available'): string {
+    if (items.length === 0) {
         return `<div class="card"><p class="no-departures">${emptyMessage}</p></div>`;
     }
 
-    return visibleItems.map(renderDisplayItem).join('');
+    return items.map(renderDisplayItem).join('');
 }
 
 interface DisplayItemsOptions {
@@ -388,9 +352,7 @@ export function displayItems(
         return 1;
     });
 
-    const filters = getDisplayFilters();
-
-    // Render search, filter controls, and matching items
+    // Render search and matching items
     let html = renderBusSearch(
         options.searchQuery,
         options.isSearchMode,
@@ -401,19 +363,14 @@ export function displayItems(
         html += `<p class="search-summary">Showing nearest bus matches for "${escapeHtml(
             options.searchQuery ?? ''
         )}"</p>`;
-        html += renderFilteredItems(
-            sorted,
-            { bus: true, train: false },
-            'No nearby buses or stops match your search'
-        );
+        html += renderItems(sorted, 'No nearby buses or stops match your search');
     } else {
-        html += renderDisplayFilters(filters);
-        html += renderFilteredItems(sorted, filters);
+        html += renderItems(sorted);
     }
 
     // Add "Show more stops" button if applicable
     const reachedMax = hasReachedMaxRadius();
-    if (filters.bus && hasMoreStops && !reachedMax) {
+    if (hasMoreStops && !reachedMax) {
         const currentRadius = getCurrentSearchRadius();
         const nextRadius = currentRadius + config.busStops.radiusIncrement;
         const displayRadius =
