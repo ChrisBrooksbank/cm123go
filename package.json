@@ -1,6 +1,7 @@
 {
     "name": "cm123go",
     "version": "1.0.0",
+    "license": "MIT",
     "description": "Transport app for Chelmsford UK",
     "type": "module",
     "scripts": {
