@@ -21,6 +21,8 @@ interface AppState {
     displayedAtcoCodes: string[];
     /** All display items (bus and train) */
     allDisplayItems: DisplayItem[];
+    /** Selected bus route filter (empty set means no filter - show all routes) */
+    selectedRoutes: Set<string>;
 }
 
 const state: AppState = {
@@ -29,6 +31,7 @@ const state: AppState = {
     hasReachedMaxRadius: false,
     displayedAtcoCodes: [],
     allDisplayItems: [],
+    selectedRoutes: new Set(),
 };
 
 /** Get the current user location */
@@ -89,6 +92,16 @@ export function setAllDisplayItems(items: DisplayItem[]): void {
 /** Add display items to the list */
 export function addDisplayItems(items: DisplayItem[]): void {
     state.allDisplayItems = [...state.allDisplayItems, ...items];
+}
+
+/** Get the currently selected bus route filter */
+export function getSelectedRoutes(): Set<string> {
+    return state.selectedRoutes;
+}
+
+/** Set the selected bus route filter */
+export function setSelectedRoutes(routes: Set<string>): void {
+    state.selectedRoutes = routes;
 }
 
 /** Initialize state from config values */

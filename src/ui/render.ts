@@ -13,6 +13,7 @@ import {
     hasReachedMaxRadius,
     setDisplayedAtcoCodes,
     setAllDisplayItems,
+    getSelectedRoutes,
 } from '@/core/app-state';
 
 /**
@@ -41,18 +42,6 @@ function formatDistance(meters: number): string {
         return `${(meters / 1000).toFixed(1)}km away`;
     }
     return `${Math.round(meters)}m away`;
-}
-
-function escapeHtml(value: string): string {
-    const replacements: Record<string, string> = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;',
-    };
-
-    return value.replace(/[&<>"']/g, character => replacements[character]);
 }
 
 /** Occupancy badge label and style class, keyed by SIRI-VM occupancy value */
@@ -232,60 +221,6 @@ function getItemDistance(item: DisplayItem): number {
 }
 
 /**
- * Render the lightweight bus search box
- */
-function renderBusSearch(
-    searchQuery = '',
-    isSearchMode = false,
-    isExpanded = false,
-    isBusy = false
-): string {
-    const escapedQuery = escapeHtml(searchQuery);
-    const clearButton = isSearchMode
-        ? '<button id="bus-search-clear" class="bus-search-clear" type="button" aria-label="Clear bus search">Clear</button>'
-        : '';
-    const expanded = isExpanded || isSearchMode || isBusy;
-    const expandedClass = expanded ? ' expanded' : '';
-    const busyClass = isBusy ? ' searching' : '';
-    const busyMarkup = isBusy
-        ? '<p id="bus-search-status" class="bus-search-status"><span class="spinner" aria-hidden="true"></span>Searching buses and stops...</p>'
-        : '<p id="bus-search-status" class="bus-search-status" hidden></p>';
-    const inputMarkup = expanded
-        ? `
-            <div class="bus-search-row">
-                <input
-                    id="bus-search-input"
-                    type="search"
-                    placeholder="Bus number or stop name"
-                    value="${escapedQuery}"
-                    autocomplete="off"
-                    autocorrect="off"
-                    spellcheck="false"
-                    aria-describedby="bus-search-status"
-                />
-                ${clearButton}
-            </div>
-            ${busyMarkup}
-        `
-        : '';
-
-    return `
-        <div class="bus-search${expandedClass}${busyClass}">
-            <button
-                id="bus-search-toggle"
-                class="bus-search-toggle"
-                type="button"
-                aria-expanded="${expanded ? 'true' : 'false'}"
-                aria-controls="bus-search-input"
-            >
-                Search buses or stops
-            </button>
-            ${inputMarkup}
-        </div>
-    `;
-}
-
-/**
  * Render the cards and empty state
  */
 function renderItems(items: DisplayItem[], emptyMessage = 'No departures available'): string {
@@ -296,12 +231,27 @@ function renderItems(items: DisplayItem[], emptyMessage = 'No departures availab
     return items.map(renderDisplayItem).join('');
 }
 
-interface DisplayItemsOptions {
-    preserveStoredItems?: boolean;
-    searchQuery?: string;
-    isSearchMode?: boolean;
-    isSearchExpanded?: boolean;
-    isSearchBusy?: boolean;
+/**
+ * Filter display items down to departures matching the selected bus routes.
+ * An empty selection means no filter is active, so everything is shown.
+ * Train items are never filtered - route selection only applies to buses.
+ */
+function applyRouteFilter(items: DisplayItem[]): DisplayItem[] {
+    const selectedRoutes = getSelectedRoutes();
+    if (selectedRoutes.size === 0) return items;
+
+    return items.reduce<DisplayItem[]>((filtered, item) => {
+        if (item.type === 'train') {
+            filtered.push(item);
+            return filtered;
+        }
+
+        const departures = item.data.departures.filter(d => selectedRoutes.has(d.line));
+        if (departures.length > 0) {
+            filtered.push({ type: 'bus', data: { ...item.data, departures } });
+        }
+        return filtered;
+    }, []);
 }
 
 /**
@@ -314,8 +264,7 @@ interface DisplayItemsOptions {
 export function displayItems(
     items: DisplayItem[],
     hasMoreStops: boolean,
-    onSetupHandlers: () => void,
-    options: DisplayItemsOptions = {}
+    onSetupHandlers: () => void
 ): void {
     const container = document.getElementById('departures-container');
     const errorCard = document.getElementById('error-card');
@@ -365,21 +314,12 @@ export function displayItems(
         return 1;
     });
 
-    // Render search and matching items
-    let html = renderBusSearch(
-        options.searchQuery,
-        options.isSearchMode,
-        options.isSearchExpanded,
-        options.isSearchBusy
-    );
-    if (options.isSearchMode) {
-        html += `<p class="search-summary">Showing nearest bus matches for "${escapeHtml(
-            options.searchQuery ?? ''
-        )}"</p>`;
-        html += renderItems(sorted, 'No nearby buses or stops match your search');
-    } else {
-        html += renderItems(sorted);
-    }
+    // Apply route filter (empty selection shows everything)
+    const selectedRoutesCount = getSelectedRoutes().size;
+    const filtered = applyRouteFilter(sorted);
+    const emptyMessage =
+        selectedRoutesCount > 0 ? 'No buses match your selected routes' : 'No departures available';
+    let html = renderItems(filtered, emptyMessage);
 
     // Add "Show more stops" button if applicable
     const reachedMax = hasReachedMaxRadius();
@@ -404,10 +344,8 @@ export function displayItems(
         .map(item => item.data.stop.atcoCode);
     setDisplayedAtcoCodes(atcoCodes);
 
-    // Store items for re-rendering after favorite toggle
-    if (!options.preserveStoredItems) {
-        setAllDisplayItems(items);
-    }
+    // Store items for re-rendering after favorite toggle or filter change
+    setAllDisplayItems(items);
 
     // Set up event handlers
     onSetupHandlers();

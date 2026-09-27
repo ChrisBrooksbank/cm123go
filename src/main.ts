@@ -50,6 +50,7 @@ import {
     type TextSize,
 } from '@/utils/settings';
 import { setupHelpHandlers, showHelpIfFirstVisit } from '@/ui/help';
+import { initializeRouteFilter } from '@/ui/route-filter';
 
 /**
  * Check if coordinates are within the Chelmsford service area
@@ -392,6 +393,7 @@ async function init(): Promise<void> {
             setupContrastButton();
             setupThemeButton();
             setupHelpHandlers();
+            initializeRouteFilter();
         } catch (settingsError) {
             Logger.warn('Settings initialization failed, continuing', settingsError);
         }

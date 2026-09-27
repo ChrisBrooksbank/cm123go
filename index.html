@@ -511,86 +511,49 @@
                 opacity: 0.5;
                 cursor: not-allowed;
             }
-            .bus-search {
-                margin: 0 0 1rem;
+            .route-filter-list {
                 display: flex;
                 flex-direction: column;
-                align-items: flex-start;
                 gap: 0.5rem;
+                max-height: 45vh;
+                overflow-y: auto;
+                margin-bottom: 1.5rem;
+                padding: 0.25rem;
             }
-            .bus-search-toggle {
-                min-height: 44px;
-                padding: 0.5rem 0.75rem;
-                border: 1px solid var(--color-border-strong);
-                border-radius: var(--radius-md);
-                background: var(--color-card);
-                color: var(--color-text);
-                cursor: pointer;
-                font-size: 0.875rem;
-                font-weight: 600;
-                transition:
-                    background-color 0.15s ease,
-                    border-color 0.15s ease;
-            }
-            .bus-search-toggle:hover,
-            .bus-search.expanded .bus-search-toggle {
-                background: var(--color-border);
-                border-color: var(--color-text-muted);
-                color: var(--color-text-strong);
-            }
-            .bus-search-row {
+            .route-filter-item {
                 display: flex;
-                gap: 0.5rem;
                 align-items: center;
-                width: 100%;
-            }
-            #bus-search-input {
-                flex: 1;
-                min-width: 0;
-                min-height: 44px;
-                padding: 0.65rem 0.75rem;
-                border: 1px solid var(--color-border-strong);
+                gap: 0.75rem;
+                padding: 0.5rem;
+                border: 1px solid var(--color-border);
                 border-radius: var(--radius-md);
-                background: var(--color-bg);
-                color: var(--color-text-strong);
-                font-size: 1rem;
+                cursor: pointer;
             }
-            #bus-search-input::placeholder {
-                color: var(--color-text-muted);
+            .route-filter-item:hover {
+                background: var(--color-border);
             }
-            .bus-search.searching #bus-search-input {
-                padding-right: 2.25rem;
+            .route-filter-item input[type='checkbox'] {
+                width: 20px;
+                height: 20px;
+                flex-shrink: 0;
             }
-            .bus-search-clear {
-                min-height: 44px;
-                padding: 0.5rem 0.75rem;
+            .route-filter-actions {
+                display: flex;
+                gap: 0.75rem;
+                margin-bottom: 0.75rem;
+            }
+            .route-filter-clear {
+                flex: 1;
+                padding: 0.65rem;
                 border: 1px solid var(--color-border-strong);
                 border-radius: var(--radius-md);
                 background: transparent;
                 color: var(--color-text);
                 cursor: pointer;
-                font-size: 0.875rem;
                 font-weight: 500;
             }
-            .bus-search-clear:hover {
+            .route-filter-clear:hover {
                 background: var(--color-border);
-            }
-            .bus-search-status {
-                margin: -0.15rem 0 0;
-                color: var(--color-text-muted);
-                font-size: 0.875rem;
-                line-height: 1.4;
-            }
-            .bus-search-status .spinner {
-                width: 14px;
-                height: 14px;
-                border-width: 2px;
-                margin-right: 0.35rem;
-            }
-            .search-summary {
-                margin: -0.25rem 0 1rem;
-                color: var(--color-text-muted);
-                font-size: 0.875rem;
             }
 
             /* Accessibility: Focus styles for keyboard navigation */
@@ -1178,6 +1141,15 @@
                     <span id="theme-icon">&#9790;</span>
                 </button>
                 <button
+                    id="route-filter-btn"
+                    class="settings-btn"
+                    aria-label="Filter which bus routes are shown"
+                    aria-pressed="false"
+                    title="Filter routes"
+                >
+                    Filter
+                </button>
+                <button
                     id="help-btn"
                     class="settings-btn"
                     aria-label="Help and information"
@@ -1359,6 +1331,27 @@
                     <li><strong>High contrast:</strong> Tap "HC" for easier-to-read colours</li>
                 </ul>
                 <button id="help-close" class="help-modal-close">Got it</button>
+            </div>
+        </div>
+
+        <!-- Route Filter Modal -->
+        <div
+            id="route-filter-modal"
+            class="help-modal-overlay"
+            hidden
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="route-filter-title"
+        >
+            <div class="help-modal">
+                <h2 id="route-filter-title">Filter bus routes</h2>
+                <div id="route-filter-list" class="route-filter-list"></div>
+                <div class="route-filter-actions">
+                    <button id="route-filter-clear" class="route-filter-clear" type="button">
+                        Show all routes
+                    </button>
+                </div>
+                <button id="route-filter-close" class="help-modal-close">Done</button>
             </div>
         </div>
 

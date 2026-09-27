@@ -8,6 +8,7 @@ const STORAGE_KEYS = {
     highContrast: 'cm123go-high-contrast',
     helpSeen: 'cm123go-help-seen',
     colorScheme: 'cm123go-color-scheme',
+    routeFilter: 'cm123go-route-filter',
 } as const;
 
 export type TextSize = 'normal' | 'large' | 'xl';
@@ -143,6 +144,30 @@ export function initializeSettings(): void {
     applyTextSize(getTextSize());
     applyHighContrast(getHighContrast());
     initializeColorScheme();
+}
+
+/**
+ * Get saved bus route filter (empty array means no filter - show all routes)
+ */
+export function getRouteFilter(): string[] {
+    const saved = localStorage.getItem(STORAGE_KEYS.routeFilter);
+    if (!saved) return [];
+
+    try {
+        const parsed: unknown = JSON.parse(saved);
+        return Array.isArray(parsed)
+            ? parsed.filter((v): v is string => typeof v === 'string')
+            : [];
+    } catch {
+        return [];
+    }
+}
+
+/**
+ * Save bus route filter
+ */
+export function setRouteFilter(routes: string[]): void {
+    localStorage.setItem(STORAGE_KEYS.routeFilter, JSON.stringify(routes));
 }
 
 /**
