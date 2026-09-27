@@ -1,0 +1,51 @@
+name: Update bus stops
+
+# Refreshes public/bus-stops*.json from NAPTAN + BODS timetables and opens a
+# PR when stops have been added, closed, or lost their bus service.
+on:
+    schedule:
+        - cron: '17 5 * * 1' # Mondays 05:17 UTC
+    workflow_dispatch:
+
+permissions:
+    contents: write
+    pull-requests: write
+
+jobs:
+    update:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'npm'
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Regenerate bus stops
+              run: npm run update-stops | tee update-stops.log
+
+            - name: Build PR body
+              run: |
+                  {
+                    echo 'Automated weekly refresh from NAPTAN (active stops) and BODS GTFS (stops with a current timetabled service).'
+                    echo
+                    echo '```'
+                    grep -v '^Using cached\|^Downloading\|^Scanning\|^Written\|^Minified' update-stops.log
+                    echo '```'
+                  } > pr-body.md
+                  rm update-stops.log
+
+            - name: Open pull request
+              uses: peter-evans/create-pull-request@v7
+              with:
+                  branch: automated/update-bus-stops
+                  commit-message: Refresh bus stop data from NAPTAN and BODS
+                  title: Refresh bus stop data
+                  body-path: pr-body.md
+                  add-paths: public/bus-stops.json,public/bus-stops.min.json
+                  delete-branch: true

@@ -18,6 +18,7 @@
         "typecheck": "tsc --noEmit",
         "knip": "knip",
         "check": "npm run typecheck && npm run lint && npm run format:check && npm run knip",
+        "update-stops": "node scripts/process-stops.js && prettier --write public/bus-stops.json",
         "prepare": "husky"
     },
     "dependencies": {
