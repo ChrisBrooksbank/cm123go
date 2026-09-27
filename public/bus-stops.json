@@ -276,18 +276,6 @@
         "locality": "Boreham"
     },
     {
-        "atcoCode": "15000101206",
-        "commonName": "The Square and Compasses",
-        "indicator": "o/s",
-        "bearing": "SE",
-        "coordinates": {
-            "latitude": 51.8152246,
-            "longitude": 0.5335165
-        },
-        "street": "Braintree Rd",
-        "locality": "Fuller Street"
-    },
-    {
         "atcoCode": "15000101301",
         "commonName": "Waltham Rd",
         "indicator": "opp",
@@ -430,18 +418,6 @@
         },
         "street": "Hospital Approach",
         "locality": "Broomfield"
-    },
-    {
-        "atcoCode": "15000105501",
-        "commonName": "New Hall School",
-        "indicator": "E-bound",
-        "bearing": "E",
-        "coordinates": {
-            "latitude": 51.763932,
-            "longitude": 0.5136568
-        },
-        "street": "New Hall School Rd",
-        "locality": "Boreham"
     },
     {
         "atcoCode": "15000105701",
@@ -1404,42 +1380,6 @@
         "locality": "Chignall Estate"
     },
     {
-        "atcoCode": "15003400601",
-        "commonName": "Avon Road",
-        "indicator": "E-bound",
-        "bearing": "E",
-        "coordinates": {
-            "latitude": 51.7428601,
-            "longitude": 0.4442411
-        },
-        "street": "Avon Rd",
-        "locality": "Chignall Estate"
-    },
-    {
-        "atcoCode": "15003400603",
-        "commonName": "Clyde Crescent North",
-        "indicator": "adj",
-        "bearing": "SE",
-        "coordinates": {
-            "latitude": 51.7452241,
-            "longitude": 0.4412685
-        },
-        "street": "Thames Ave",
-        "locality": "Chignall Estate"
-    },
-    {
-        "atcoCode": "15003400605",
-        "commonName": "Clyde Crescent South",
-        "indicator": "adj",
-        "bearing": "S",
-        "coordinates": {
-            "latitude": 51.7436828,
-            "longitude": 0.4423009
-        },
-        "street": "Thames Ave",
-        "locality": "Chignall Estate"
-    },
-    {
         "atcoCode": "15003400701",
         "commonName": "Micawber Way",
         "indicator": "adj",
@@ -2119,18 +2059,6 @@
         "coordinates": {
             "latitude": 51.7515549,
             "longitude": 0.485034
-        },
-        "street": "Waveney Dr",
-        "locality": "Springfield"
-    },
-    {
-        "atcoCode": "15003402803",
-        "commonName": "Blackwater Close",
-        "indicator": "adj",
-        "bearing": "NE",
-        "coordinates": {
-            "latitude": 51.7513303,
-            "longitude": 0.4816167
         },
         "street": "Waveney Dr",
         "locality": "Springfield"
@@ -4068,18 +3996,6 @@
         "locality": "Sandon"
     },
     {
-        "atcoCode": "15003409102",
-        "commonName": "Fairway",
-        "indicator": "adj",
-        "bearing": "W",
-        "coordinates": {
-            "latitude": 51.7199363,
-            "longitude": 0.4824308
-        },
-        "street": "Gloucester Ave",
-        "locality": "Moulsham Lodge Estate"
-    },
-    {
         "atcoCode": "15003409103",
         "commonName": "Fairway",
         "indicator": "opp",
@@ -4944,30 +4860,6 @@
         "locality": "Chelmsford City Centre"
     },
     {
-        "atcoCode": "15003411402",
-        "commonName": "Pennine Road",
-        "indicator": "S-bound",
-        "bearing": "S",
-        "coordinates": {
-            "latitude": 51.7508822,
-            "longitude": 0.4437905
-        },
-        "street": "Pennine Rd",
-        "locality": "Melbourne Farm"
-    },
-    {
-        "atcoCode": "15003411403",
-        "commonName": "Cheviot Drive",
-        "indicator": "adj",
-        "bearing": "S",
-        "coordinates": {
-            "latitude": 51.7486361,
-            "longitude": 0.4441184
-        },
-        "street": "Pennine Rd",
-        "locality": "Melbourne Farm"
-    },
-    {
         "atcoCode": "15004538",
         "commonName": "Penden Corner",
         "indicator": "N-bound",
@@ -5568,54 +5460,6 @@
         "locality": "Chelmsford"
     },
     {
-        "atcoCode": "1500DGK236",
-        "commonName": "Carriage Drive",
-        "indicator": "adj",
-        "bearing": "NW",
-        "coordinates": {
-            "latitude": 51.7566149,
-            "longitude": 0.4966293
-        },
-        "street": "Paddock Dr",
-        "locality": "North Springfield"
-    },
-    {
-        "atcoCode": "1500DGK2371",
-        "commonName": "Saddle Rise",
-        "indicator": "adj",
-        "bearing": "NE",
-        "coordinates": {
-            "latitude": 51.7580917,
-            "longitude": 0.4944211
-        },
-        "street": "Paddock Dr",
-        "locality": "North Springfield"
-    },
-    {
-        "atcoCode": "1500DGK2372",
-        "commonName": "Harness Close",
-        "indicator": "adj",
-        "bearing": "S",
-        "coordinates": {
-            "latitude": 51.7573701,
-            "longitude": 0.4966419
-        },
-        "street": "Paddock Dr",
-        "locality": "North Springfield"
-    },
-    {
-        "atcoCode": "1500DGK2373",
-        "commonName": "Croft Court",
-        "indicator": "opp",
-        "bearing": "NW",
-        "coordinates": {
-            "latitude": 51.7581509,
-            "longitude": 0.4962937
-        },
-        "street": "Paddock Dr",
-        "locality": "North Springfield"
-    },
-    {
         "atcoCode": "1500DGK247Y",
         "commonName": "Sunrise Avenue",
         "indicator": "N-bound",
@@ -6156,18 +6000,6 @@
         "locality": "Great Baddow"
     },
     {
-        "atcoCode": "1500IM2318",
-        "commonName": "Wicklow Avenue",
-        "indicator": "E-bound",
-        "bearing": "E",
-        "coordinates": {
-            "latitude": 51.7509938,
-            "longitude": 0.4414493
-        },
-        "street": "Wicklow Ave",
-        "locality": "Melbourne Farm"
-    },
-    {
         "atcoCode": "1500IM2319",
         "commonName": "Taylor Avenue",
         "indicator": "opp",
@@ -6226,18 +6058,6 @@
         },
         "street": "North Ave",
         "locality": "Chelmsford"
-    },
-    {
-        "atcoCode": "1500IM2322",
-        "commonName": "Loftin Way",
-        "indicator": "W-bound",
-        "bearing": "W",
-        "coordinates": {
-            "latitude": 51.7192451,
-            "longitude": 0.4862009
-        },
-        "street": "Loftin Way",
-        "locality": "Great Baddow"
     },
     {
         "atcoCode": "1500IM2322B",
@@ -6538,30 +6358,6 @@
         },
         "street": "Lodge Rd",
         "locality": "Oxney Green"
-    },
-    {
-        "atcoCode": "1500IM2391",
-        "commonName": "New Dukes Way",
-        "indicator": "W-bound",
-        "bearing": "W",
-        "coordinates": {
-            "latitude": 51.7442263,
-            "longitude": 0.5040586
-        },
-        "street": "New Dukes Way",
-        "locality": "Chelmer Village"
-    },
-    {
-        "atcoCode": "1500IM2391B",
-        "commonName": "New Dukes Way",
-        "indicator": "E-bound",
-        "bearing": "E",
-        "coordinates": {
-            "latitude": 51.7443486,
-            "longitude": 0.5042248
-        },
-        "street": "New Dukes Way",
-        "locality": "Chelmer Village"
     },
     {
         "atcoCode": "1500IM2392",
@@ -6924,30 +6720,6 @@
         "locality": "Springfield Park"
     },
     {
-        "atcoCode": "1500IM2735",
-        "commonName": "Golding Thoroughfare",
-        "indicator": "opp",
-        "bearing": "N",
-        "coordinates": {
-            "latitude": 51.7420319,
-            "longitude": 0.4998377
-        },
-        "street": "New Dukes Way",
-        "locality": "Chelmer Village"
-    },
-    {
-        "atcoCode": "1500IM2735B",
-        "commonName": "Golding Thoroughfare",
-        "indicator": "adj",
-        "bearing": "S",
-        "coordinates": {
-            "latitude": 51.7416342,
-            "longitude": 0.4999316
-        },
-        "street": "New Dukes Way",
-        "locality": "Chelmer Village"
-    },
-    {
         "atcoCode": "1500IM2B",
         "commonName": "Shopping Centre",
         "indicator": "opp",
@@ -7054,42 +6826,6 @@
         },
         "street": "Ongar Rd",
         "locality": "Oxney Green"
-    },
-    {
-        "atcoCode": "1500IM806",
-        "commonName": "The Square and Compasses",
-        "indicator": "opp",
-        "bearing": "NW",
-        "coordinates": {
-            "latitude": 51.8151726,
-            "longitude": 0.5334266
-        },
-        "street": "Braintree Rd",
-        "locality": "Fuller Street"
-    },
-    {
-        "atcoCode": "1500IM818",
-        "commonName": "Fairstead Hall Road",
-        "indicator": "opp",
-        "bearing": "W",
-        "coordinates": {
-            "latitude": 51.8145725,
-            "longitude": 0.5491213
-        },
-        "street": "Braintree Rd",
-        "locality": "Fairstead"
-    },
-    {
-        "atcoCode": "1500IM818Y",
-        "commonName": "Fairstead Hall Road",
-        "indicator": "adj",
-        "bearing": "E",
-        "coordinates": {
-            "latitude": 51.8146437,
-            "longitude": 0.5491543
-        },
-        "street": "Braintree Rd",
-        "locality": "Fairstead"
     },
     {
         "atcoCode": "1500IM820",

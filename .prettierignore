@@ -3,3 +3,4 @@ dev-dist/
 coverage/
 node_modules/
 *.min.js
+public/bus-stops.min.json

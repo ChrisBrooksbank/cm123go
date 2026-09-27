@@ -37,6 +37,7 @@ npm run format         # Prettier format all files
 npm run typecheck      # TypeScript type check
 npm run knip           # Find unused code
 npm run check          # Run all checks
+npm run update-stops   # Regenerate bundled bus stops (NAPTAN + BODS timetables)
 
 # Run a single test file
 npm test -- src/path/to/file.test.ts
