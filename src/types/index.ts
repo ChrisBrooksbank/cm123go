@@ -70,6 +70,10 @@ const NearbyBusStopSchema = BusStopSchema.extend({
 });
 export type NearbyBusStop = z.infer<typeof NearbyBusStopSchema>;
 
+/** SIRI-VM vehicle occupancy (from operators with passenger-counting equipment; rarely populated) */
+export const OccupancySchema = z.enum(['seatsAvailable', 'standingAvailable', 'full']);
+export type Occupancy = z.infer<typeof OccupancySchema>;
+
 /** Departure information */
 const DepartureSchema = z.object({
     line: z.string(),
@@ -80,6 +84,8 @@ const DepartureSchema = z.object({
     operatorName: z.string().optional(),
     /** True if departure time is from real-time SIRI-VM data */
     isRealTime: z.boolean().optional(),
+    /** Vehicle occupancy from SIRI-VM, when the operator publishes it */
+    occupancy: OccupancySchema.optional(),
 });
 export type Departure = z.infer<typeof DepartureSchema>;
 
@@ -132,6 +138,8 @@ export interface VehicleActivity {
     destinationName?: string;
     originRef?: string;
     originName?: string;
+    /** Vehicle occupancy, when the operator publishes it via SIRI-VM */
+    occupancy?: Occupancy;
 }
 
 /** GTFS stop time entry */

@@ -303,6 +303,24 @@
                 background: var(--color-scheduled-bg);
                 color: var(--color-scheduled);
             }
+            .occupancy-badge {
+                font-size: 0.75rem;
+                font-weight: 600;
+                padding: 0.2rem 0.4rem;
+                border-radius: var(--radius-sm);
+            }
+            .occupancy-badge.seats-available {
+                background: var(--color-success-bg);
+                color: var(--color-success);
+            }
+            .occupancy-badge.standing-only {
+                background: var(--color-favorite-bg);
+                color: var(--color-favorite);
+            }
+            .occupancy-badge.full {
+                background: var(--color-cancelled-bg);
+                color: var(--color-cancelled);
+            }
             .timestamp {
                 color: var(--color-text-muted);
                 font-size: 0.75rem;
@@ -720,6 +738,12 @@
                 color: #ffffff;
             }
             body.high-contrast .source-badge.scheduled {
+                background: #ffffff;
+                color: #000000;
+            }
+            body.high-contrast .occupancy-badge {
+                border: 2px solid currentColor;
+                font-weight: 700;
                 background: #ffffff;
                 color: #000000;
             }

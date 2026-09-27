@@ -86,6 +86,7 @@ async function calculateDeparturesFromBODS(stop: BusStop, limit: number): Promis
                 status: 'on-time',
                 operatorName: scheduled.operatorName,
                 isRealTime: true,
+                occupancy: matchingVehicle.occupancy,
             });
         } else {
             // Use scheduled time from timetable
@@ -207,6 +208,7 @@ async function getRealTimeOnlyDepartures(
                 status: 'on-time',
                 operatorName: undefined,
                 isRealTime: true,
+                occupancy: vehicle.occupancy,
             });
         }
 
@@ -255,7 +257,7 @@ function enrichDestinationFromSiriVm(departure: Departure, vehicles: VehicleActi
 }
 
 /**
- * Enrich First Bus departures with SIRI-VM destination names
+ * Enrich First Bus departures with SIRI-VM destination names and occupancy
  */
 async function enrichFirstBusDepartures(
     departures: Departure[],
@@ -270,10 +272,18 @@ async function enrichFirstBusDepartures(
 
         if (vehicles.length === 0) return departures;
 
-        return departures.map(dep => ({
-            ...dep,
-            destination: enrichDestinationFromSiriVm(dep, vehicles),
-        }));
+        return departures.map(dep => {
+            const normalizedLine = normalizeLineRef(dep.line);
+            const matchingVehicle = vehicles.find(
+                v => normalizeLineRef(v.lineRef) === normalizedLine
+            );
+
+            return {
+                ...dep,
+                destination: enrichDestinationFromSiriVm(dep, vehicles),
+                occupancy: matchingVehicle?.occupancy,
+            };
+        });
     } catch {
         return departures; // Graceful fallback
     }

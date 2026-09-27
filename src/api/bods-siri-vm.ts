@@ -8,7 +8,7 @@ import { resilientFetch, CircuitOpenError } from '@utils/helpers';
 import { fetchWithTimeout } from '@utils/fetch-timeout';
 import { getConfig } from '@config/index';
 import { BusStopError } from '@core/bus-stops/errors';
-import { BusStopErrorCode } from '@/types';
+import { BusStopErrorCode, OccupancySchema } from '@/types';
 import type { VehicleActivity, BoundingBox, Coordinates } from '@/types';
 
 /**
@@ -94,6 +94,12 @@ function parseSiriVmResponse(xmlText: string): VehicleActivity[] {
 
         const originName = journey.querySelector('OriginName')?.textContent;
         if (originName) vehicle.originName = originName;
+
+        // Occupancy is rarely populated - only some operators have passenger-counting equipment
+        const occupancyResult = OccupancySchema.safeParse(
+            journey.querySelector('Occupancy')?.textContent
+        );
+        if (occupancyResult.success) vehicle.occupancy = occupancyResult.data;
 
         vehicles.push(vehicle);
     }

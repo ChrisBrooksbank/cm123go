@@ -55,6 +55,13 @@ function escapeHtml(value: string): string {
     return value.replace(/[&<>"']/g, character => replacements[character]);
 }
 
+/** Occupancy badge label and style class, keyed by SIRI-VM occupancy value */
+const OCCUPANCY_DISPLAY: Record<string, { label: string; className: string }> = {
+    seatsAvailable: { label: 'Seats available', className: 'seats-available' },
+    standingAvailable: { label: 'Standing only', className: 'standing-only' },
+    full: { label: 'Full', className: 'full' },
+};
+
 /**
  * Render a single departure row
  */
@@ -65,11 +72,17 @@ function renderDeparture(departure: Departure): string {
         ? '<span class="source-badge realtime">Live</span>'
         : '<span class="source-badge scheduled">Scheduled</span>';
 
+    const occupancy = departure.occupancy ? OCCUPANCY_DISPLAY[departure.occupancy] : undefined;
+    const occupancyBadge = occupancy
+        ? `<span class="occupancy-badge ${occupancy.className}">${occupancy.label}</span>`
+        : '';
+
     return `
         <div class="departure-row">
             <span class="line-badge">${departure.line}</span>
             <span class="destination">${departure.destination}</span>
             <span class="time-container">
+                ${occupancyBadge}
                 ${sourceIndicator}
                 <span class="${timeClass}">${timeDisplay}</span>
             </span>
