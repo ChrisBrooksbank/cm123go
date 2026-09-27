@@ -30,6 +30,7 @@ const COLS = {
     Longitude: 29,
     Latitude: 30,
     StopType: 31,
+    Status: 42,
 };
 
 function parseCsvLine(line) {
@@ -75,6 +76,9 @@ for (let i = 1; i < lines.length; i++) {
     // Filter to BCT stop type (bus/coach/tram)
     const stopType = fields[COLS.StopType];
     if (stopType !== 'BCT') continue;
+
+    // Skip stops NAPTAN has marked as no longer active (e.g. decommissioned)
+    if (fields[COLS.Status] !== 'active') continue;
 
     const lat = parseFloat(fields[COLS.Latitude]);
     const lng = parseFloat(fields[COLS.Longitude]);

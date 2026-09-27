@@ -12,3 +12,7 @@ coverage/
 
 # Local Netlify folder
 .netlify
+
+# Raw NAPTAN source data (input to scripts/process-stops.js, regenerate from
+# https://naptan.api.dft.gov.uk/v1/access-nodes?dataFormat=csv when updating stops)
+essex-stops.csv
