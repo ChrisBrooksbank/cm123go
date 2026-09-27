@@ -7,7 +7,7 @@
 export { GeolocationService } from './geolocation';
 
 // Bus stop services
-export { BusStopService } from './bus-stops';
+export { BusStopService, deduplicateBySharedLines } from './bus-stops';
 
 // Train station services
 export { TrainStationService, TrainDepartureService } from './train-stations';

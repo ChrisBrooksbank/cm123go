@@ -82,6 +82,7 @@ export default tseslint.config(
             'max-lines-per-function': 'off',
             '@typescript-eslint/require-await': 'off', // Test mocks often don't need await
             '@typescript-eslint/no-floating-promises': 'off', // Tests may intentionally not await
+            '@typescript-eslint/unbound-method': 'off', // False positive on vi.mocked() object methods
         },
     },
     {

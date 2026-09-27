@@ -2,4 +2,4 @@
  * Bus Stops Module
  */
 
-export { BusStopService } from './service';
+export { BusStopService, deduplicateBySharedLines } from './service';

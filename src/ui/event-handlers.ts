@@ -11,6 +11,7 @@ import {
     TrainDepartureService,
     GeolocationService,
     setUserLocation,
+    deduplicateBySharedLines,
 } from '@/core';
 import { FavoritesManager } from '@/utils/favorites';
 import { reverseGeocodeToPostcode } from '@/api';
@@ -35,6 +36,8 @@ import {
     showPostcodeEntryForm,
     updatePostcodeDisplay,
     showLoadingDepartures,
+    SHOW_MORE_LABEL,
+    SHOW_MORE_BUSY_LABEL,
 } from './render';
 import { triggerHapticFeedback } from '@/utils/settings';
 
@@ -142,7 +145,7 @@ async function handleShowMore(): Promise<void> {
     const container = document.getElementById('departures-container');
 
     if (btn instanceof HTMLButtonElement) {
-        btn.textContent = 'Searching...';
+        btn.textContent = SHOW_MORE_BUSY_LABEL;
         btn.disabled = true;
         btn.setAttribute('aria-busy', 'true');
     }
@@ -195,10 +198,22 @@ async function handleShowMore(): Promise<void> {
             result.stops.map(stop => BusStopService.getDeparturesForStop(stop))
         );
 
-        // Add to display items
-        const newItems: DisplayItem[] = additionalBoards
-            .filter(b => b.departures.length > 0)
-            .map(b => ({ type: 'bus' as const, data: b }));
+        // Drop stops with no departures, then dedupe against what's already on screen
+        // (existing boards first, so a new stop serving the same lines as one already
+        // shown gets dropped rather than added as clutter)
+        const existingBusBoards = getAllDisplayItems()
+            .filter((item): item is DisplayItem & { type: 'bus' } => item.type === 'bus')
+            .map(item => item.data);
+        const existingAtcoCodes = new Set(existingBusBoards.map(b => b.stop.atcoCode));
+        const usefulNewBoards = deduplicateBySharedLines([
+            ...existingBusBoards,
+            ...additionalBoards.filter(b => b.departures.length > 0),
+        ]).filter(b => !existingAtcoCodes.has(b.stop.atcoCode));
+
+        const newItems: DisplayItem[] = usefulNewBoards.map(b => ({
+            type: 'bus' as const,
+            data: b,
+        }));
 
         // Update displayed ATCO codes
         addDisplayedAtcoCodes(result.stops.map(s => s.atcoCode));
@@ -210,7 +225,9 @@ async function handleShowMore(): Promise<void> {
 
         // Announce results to screen readers
         announceStatus(
-            `Found ${newItems.length} additional stop${newItems.length === 1 ? '' : 's'}`
+            newItems.length > 0
+                ? `Found ${newItems.length} additional stop${newItems.length === 1 ? '' : 's'}`
+                : 'No new stops found - the nearby stops already cover these buses'
         );
 
         Logger.debug('Expanded stops loaded', {
@@ -226,10 +243,7 @@ async function handleShowMore(): Promise<void> {
         }
 
         if (btn instanceof HTMLButtonElement) {
-            const nextRadius = currentRadius + config.busStops.radiusIncrement;
-            const displayRadius =
-                nextRadius >= 1000 ? `${(nextRadius / 1000).toFixed(1)}km` : `${nextRadius}m`;
-            btn.textContent = `Show more stops (within ${displayRadius})`;
+            btn.textContent = SHOW_MORE_LABEL;
             btn.disabled = false;
             btn.removeAttribute('aria-busy');
         }

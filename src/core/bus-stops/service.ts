@@ -54,11 +54,62 @@ function getOppositeBearing(bearing: string | undefined): string | undefined {
 }
 
 /**
+ * Filter nearby stops down to up to 2 in the nearest stop's bearing and up to 2 in the
+ * opposite bearing - the "both directions" curated list shared by getBothDirections and
+ * refreshBothDirections.
+ */
+function selectBothDirectionStops(nearbyStops: NearbyBusStop[]): NearbyBusStop[] {
+    const nearest = nearbyStops[0];
+    const primaryBearing = nearest.bearing?.toUpperCase();
+    const oppositeBearing = getOppositeBearing(nearest.bearing);
+
+    const primaryStops = nearbyStops.filter(stop => stop.bearing?.toUpperCase() === primaryBearing);
+    const oppositeStops = oppositeBearing
+        ? nearbyStops.filter(stop => stop.bearing?.toUpperCase() === oppositeBearing)
+        : nearbyStops.filter(
+              stop => stop.bearing && stop.bearing?.toUpperCase() !== primaryBearing
+          );
+
+    return [...primaryStops.slice(0, 2), ...oppositeStops.slice(0, 2)];
+}
+
+/**
+ * Fetch departure boards for a set of stops in parallel, splitting fulfilled boards from
+ * failures instead of letting one bad stop fail the whole batch.
+ */
+async function fetchBoardsWithPartialFailures(
+    stopsToShow: NearbyBusStop[],
+    fetchBoard: (stop: NearbyBusStop) => Promise<DepartureBoard>
+): Promise<{ boards: DepartureBoard[]; partialFailures: StopFetchError[] }> {
+    const results = await Promise.allSettled(stopsToShow.map(fetchBoard));
+
+    const boards: DepartureBoard[] = [];
+    const partialFailures: StopFetchError[] = [];
+
+    results.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+            boards.push(result.value);
+        } else {
+            const stop = stopsToShow[index];
+            const errorMessage =
+                result.reason instanceof Error ? result.reason.message : String(result.reason);
+            partialFailures.push({ stop, error: errorMessage });
+            Logger.warn('Failed to fetch departures for stop', {
+                atcoCode: stop.atcoCode,
+                error: errorMessage,
+            });
+        }
+    });
+
+    return { boards, partialFailures };
+}
+
+/**
  * Removes redundant stops going the same direction that share bus lines.
  * Keeps the nearest stop when duplicates are found.
  * Logic: if the same bus serves both stops, showing it twice is redundant.
  */
-function deduplicateBySharedLines(boards: DepartureBoard[]): DepartureBoard[] {
+export function deduplicateBySharedLines(boards: DepartureBoard[]): DepartureBoard[] {
     const result: DepartureBoard[] = [];
 
     for (const board of boards) {
@@ -289,55 +340,13 @@ export const BusStopService = {
                 );
             }
 
-            const nearest = nearbyStops[0];
-            const primaryBearing = nearest.bearing?.toUpperCase();
-            const oppositeBearing = getOppositeBearing(nearest.bearing);
-
-            // Find stops in primary direction (same bearing as nearest)
-            const primaryStops = nearbyStops.filter(
-                stop => stop.bearing?.toUpperCase() === primaryBearing
-            );
-
-            // Find stops in opposite direction
-            const oppositeStops = oppositeBearing
-                ? nearbyStops.filter(stop => stop.bearing?.toUpperCase() === oppositeBearing)
-                : nearbyStops.filter(
-                      stop => stop.bearing && stop.bearing?.toUpperCase() !== primaryBearing
-                  );
-
-            // Take up to 2 from each direction
-            const stopsToShow: NearbyBusStop[] = [];
-
-            // Add primary direction stops (up to 2)
-            stopsToShow.push(...primaryStops.slice(0, 2));
-
-            // Add opposite direction stops (up to 2)
-            stopsToShow.push(...oppositeStops.slice(0, 2));
+            const stopsToShow = selectBothDirectionStops(nearbyStops);
 
             // Fetch departures for all stops in parallel with partial success handling
-            const results = await Promise.allSettled(
-                stopsToShow.map(stop => this.getDeparturesForStop(stop))
+            const { boards, partialFailures } = await fetchBoardsWithPartialFailures(
+                stopsToShow,
+                stop => this.getDeparturesForStop(stop)
             );
-
-            const boards: DepartureBoard[] = [];
-            const partialFailures: StopFetchError[] = [];
-
-            results.forEach((result, index) => {
-                if (result.status === 'fulfilled') {
-                    boards.push(result.value);
-                } else {
-                    const stop = stopsToShow[index];
-                    const errorMessage =
-                        result.reason instanceof Error
-                            ? result.reason.message
-                            : String(result.reason);
-                    partialFailures.push({ stop, error: errorMessage });
-                    Logger.warn('Failed to fetch departures for stop', {
-                        atcoCode: stop.atcoCode,
-                        error: errorMessage,
-                    });
-                }
-            });
 
             // Return success if at least one stop succeeded
             if (boards.length > 0) {
@@ -468,9 +477,23 @@ export const BusStopService = {
 
         // Try progressively larger radii until we find stops or hit max
         while (searchRadius <= config.busStops.maxExpandedRadius) {
-            const nearbyStops = await this.findNearest(location, 100, searchRadius);
+            let nearbyStops: NearbyBusStop[] = [];
+            try {
+                nearbyStops = await this.findNearest(location, 100, searchRadius);
+            } catch (error) {
+                // A radius band with genuinely zero stops isn't a failure - just widen further
+                if (!(error instanceof BusStopError) || !error.isNoStopsFound()) {
+                    throw error;
+                }
+            }
+
             const newStops = nearbyStops
-                .filter(stop => !excludeSet.has(stop.atcoCode))
+                // Only genuinely farther-out stops count as "new" - stops already within
+                // currentRadius were simply excluded from the initial direction-limited list,
+                // not undiscovered, so resurfacing them wouldn't be a useful expansion.
+                .filter(
+                    stop => stop.distanceMeters > currentRadius && !excludeSet.has(stop.atcoCode)
+                )
                 .slice(0, maxResults);
 
             if (newStops.length > 0) {
@@ -498,26 +521,12 @@ export const BusStopService = {
                 );
             }
 
-            const nearest = nearbyStops[0];
-            const primaryBearing = nearest.bearing?.toUpperCase();
-            const oppositeBearing = getOppositeBearing(nearest.bearing);
-
-            // Find stops in each direction
-            const primaryStops = nearbyStops.filter(
-                stop => stop.bearing?.toUpperCase() === primaryBearing
-            );
-            const oppositeStops = oppositeBearing
-                ? nearbyStops.filter(stop => stop.bearing?.toUpperCase() === oppositeBearing)
-                : nearbyStops.filter(
-                      stop => stop.bearing && stop.bearing?.toUpperCase() !== primaryBearing
-                  );
-
-            // Take up to 2 from each direction
-            const stopsToShow = [...primaryStops.slice(0, 2), ...oppositeStops.slice(0, 2)];
+            const stopsToShow = selectBothDirectionStops(nearbyStops);
 
             // Fetch fresh departures for all stops in parallel with partial success handling
-            const results = await Promise.allSettled(
-                stopsToShow.map(async stop => {
+            const { boards, partialFailures } = await fetchBoardsWithPartialFailures(
+                stopsToShow,
+                async stop => {
                     const departures = await fetchDeparturesForStop(stop, 3);
                     await BusStopCache.setDepartures(stop.atcoCode, departures);
                     return {
@@ -526,28 +535,8 @@ export const BusStopService = {
                         lastUpdated: Date.now(),
                         isStale: false,
                     };
-                })
-            );
-
-            const boards: DepartureBoard[] = [];
-            const partialFailures: StopFetchError[] = [];
-
-            results.forEach((result, index) => {
-                if (result.status === 'fulfilled') {
-                    boards.push(result.value);
-                } else {
-                    const stop = stopsToShow[index];
-                    const errorMessage =
-                        result.reason instanceof Error
-                            ? result.reason.message
-                            : String(result.reason);
-                    partialFailures.push({ stop, error: errorMessage });
-                    Logger.warn('Failed to refresh departures for stop', {
-                        atcoCode: stop.atcoCode,
-                        error: errorMessage,
-                    });
                 }
-            });
+            );
 
             if (boards.length > 0) {
                 return {

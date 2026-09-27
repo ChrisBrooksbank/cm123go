@@ -44,6 +44,20 @@ function formatDistance(meters: number): string {
     return `${Math.round(meters)}m away`;
 }
 
+/**
+ * Format a search radius for display (no "away" suffix)
+ */
+function formatRadius(meters: number): string {
+    if (meters >= 1000) {
+        return `${(meters / 1000).toFixed(1)}km`;
+    }
+    return `${Math.round(meters)}m`;
+}
+
+/** Labels for the "show more stops" button, shared with event-handlers.ts */
+export const SHOW_MORE_LABEL = 'Search further away';
+export const SHOW_MORE_BUSY_LABEL = 'Searching further away…';
+
 /** Occupancy badge label and style class, keyed by SIRI-VM occupancy value */
 const OCCUPANCY_DISPLAY: Record<string, { label: string; className: string }> = {
     seatsAvailable: { label: 'Seats available', className: 'seats-available' },
@@ -321,17 +335,22 @@ export function displayItems(
         selectedRoutesCount > 0 ? 'No buses match your selected routes' : 'No departures available';
     let html = renderItems(filtered, emptyMessage);
 
-    // Add "Show more stops" button if applicable
+    // Add "Show more stops" button if applicable, or a closing note once the
+    // search has been expanded as far as it will go
     const reachedMax = hasReachedMaxRadius();
     if (hasMoreStops && !reachedMax) {
         const currentRadius = getCurrentSearchRadius();
-        const nextRadius = currentRadius + config.busStops.radiusIncrement;
-        const displayRadius =
-            nextRadius >= 1000 ? `${(nextRadius / 1000).toFixed(1)}km` : `${nextRadius}m`;
 
         html += `
             <div id="show-more-container" class="show-more-container">
-                <button id="show-more-btn" class="show-more-btn" aria-label="Load more bus stops within ${displayRadius}">Show more stops (within ${displayRadius})</button>
+                <button id="show-more-btn" class="show-more-btn" aria-label="${SHOW_MORE_LABEL}">${SHOW_MORE_LABEL}</button>
+                <p class="show-more-hint">Showing stops within ${formatRadius(currentRadius)}</p>
+            </div>
+        `;
+    } else if (reachedMax) {
+        html += `
+            <div id="show-more-container" class="show-more-container">
+                <p class="show-more-hint">That's all stops within ${formatRadius(config.busStops.maxExpandedRadius)}</p>
             </div>
         `;
     }
