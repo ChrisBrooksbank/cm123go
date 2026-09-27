@@ -113,9 +113,9 @@ async function fetchVehiclePositions(boundingBox: BoundingBox): Promise<VehicleA
         throw new BusStopError('BODS API key not configured', BusStopErrorCode.API_KEY_MISSING);
     }
 
-    // BODS SIRI-VM endpoint format: boundingBox=minLat,minLon,maxLat,maxLon
+    // BODS SIRI-VM endpoint format: boundingBox=minLon,minLat,maxLon,maxLat
     // Uses /api/bods proxy to avoid CORS errors (proxied via Netlify/Vite)
-    const bbox = `${boundingBox.minLatitude},${boundingBox.minLongitude},${boundingBox.maxLatitude},${boundingBox.maxLongitude}`;
+    const bbox = `${boundingBox.minLongitude},${boundingBox.minLatitude},${boundingBox.maxLongitude},${boundingBox.maxLatitude}`;
     const url = `/api/bods/datafeed/?boundingBox=${bbox}&api_key=${bodsApiKey}`;
 
     Logger.info('Fetching SIRI-VM vehicle positions', {
