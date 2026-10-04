@@ -19,7 +19,8 @@
         "knip": "knip",
         "check": "npm run typecheck && npm run lint && npm run format:check && npm run knip",
         "update-stops": "node scripts/process-stops.js && prettier --write public/bus-stops.json",
-        "prepare": "husky"
+        "prepare": "husky",
+        "demo": "node scripts/record-demo.mjs"
     },
     "dependencies": {
         "zod": "^3.0.0"
@@ -37,6 +38,7 @@
         "jsdom": "^25.0.0",
         "knip": "^5.0.0",
         "lint-staged": "^15.0.0",
+        "playwright": "^1.56.0",
         "prettier": "^3.0.0",
         "sharp": "^0.34.5",
         "typescript": "^5.0.0",
