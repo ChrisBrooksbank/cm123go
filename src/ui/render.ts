@@ -23,14 +23,14 @@ import {
 function getBearingLabel(bearing: string | undefined): string {
     if (!bearing) return '';
     const labels: Record<string, string> = {
-        N: 'Northbound',
-        S: 'Southbound',
-        E: 'Eastbound',
-        W: 'Westbound',
-        NE: 'North-East',
-        NW: 'North-West',
-        SE: 'South-East',
-        SW: 'South-West',
+        N: 'Heading north',
+        S: 'Heading south',
+        E: 'Heading east',
+        W: 'Heading west',
+        NE: 'Heading north-east',
+        NW: 'Heading north-west',
+        SE: 'Heading south-east',
+        SW: 'Heading south-west',
     };
     return labels[bearing.toUpperCase()] || escapeHtml(bearing);
 }
@@ -54,6 +54,10 @@ function formatRadius(meters: number): string {
     }
     return `${Math.round(meters)}m`;
 }
+
+/** Favorite toggle icons (outline / filled star), shared with event-handlers.ts */
+export const FAVORITE_ICON = '☆';
+export const FAVORITED_ICON = '★';
 
 /** Labels for the "show more stops" button, shared with event-handlers.ts */
 export const SHOW_MORE_LABEL = 'Search further away';
@@ -101,13 +105,11 @@ function renderDepartureCard(board: DepartureBoard): string {
     const stopName = escapeHtml(board.stop.commonName);
     const atcoCode = escapeHtml(board.stop.atcoCode);
     const indicator = board.stop.indicator ? ` (${escapeHtml(board.stop.indicator)})` : '';
-    const bearingBadge = board.stop.bearing
-        ? `<span class="bearing-badge">${getBearingLabel(board.stop.bearing)}</span>`
-        : '';
+    const bearing = board.stop.bearing ? ` · ${getBearingLabel(board.stop.bearing)}` : '';
 
     const isFavorite = FavoritesManager.isFavorite(board.stop.atcoCode);
     const favoriteClass = isFavorite ? 'favorite-btn active' : 'favorite-btn';
-    const favoriteText = isFavorite ? 'Favorited' : 'Favorite';
+    const favoriteText = isFavorite ? FAVORITED_ICON : FAVORITE_ICON;
     const favoriteAriaPressed = isFavorite ? 'true' : 'false';
     const favoriteAriaLabel = isFavorite
         ? `Remove ${stopName} from favorites`
@@ -124,12 +126,11 @@ function renderDepartureCard(board: DepartureBoard): string {
         <div class="card" data-atco-code="${atcoCode}">
             <div class="stop-header">
                 <h2>${stopName}${indicator}</h2>
-                ${bearingBadge}
             </div>
             <div class="card-meta">
-                <span class="distance">${formatDistance(board.stop.distanceMeters)}</span>
+                <span class="distance">${formatDistance(board.stop.distanceMeters)}${bearing}</span>
                 <a href="${directionsUrl}" class="directions-link" target="_blank" rel="noopener" aria-label="Get walking directions to this stop">Directions</a>
-                <button class="${favoriteClass}" data-atco-code="${atcoCode}" aria-pressed="${favoriteAriaPressed}" aria-label="${favoriteAriaLabel}">${favoriteText}</button>
+                <button class="${favoriteClass}" data-atco-code="${atcoCode}" aria-pressed="${favoriteAriaPressed}" aria-label="${favoriteAriaLabel}" title="${favoriteAriaLabel}">${favoriteText}</button>
             </div>
             <div class="departures-list">${departuresHtml}</div>
         </div>
@@ -191,7 +192,7 @@ function renderTrainStationCard(board: TrainDepartureBoard, errorMessage?: strin
 
     const isFavorite = FavoritesManager.isStationFavorite(station.crsCode);
     const favoriteClass = isFavorite ? 'favorite-btn active' : 'favorite-btn';
-    const favoriteText = isFavorite ? 'Favorited' : 'Favorite';
+    const favoriteText = isFavorite ? FAVORITED_ICON : FAVORITE_ICON;
     const favoriteAriaPressed = isFavorite ? 'true' : 'false';
     const favoriteAriaLabel = isFavorite
         ? `Remove ${station.name} from favorites`
@@ -199,9 +200,8 @@ function renderTrainStationCard(board: TrainDepartureBoard, errorMessage?: strin
 
     return `
         <div class="card train-station-card" data-crs-code="${station.crsCode}">
-            <svg class="national-rail-logo" viewBox="0 0 80 50" aria-label="National Rail" role="img">
-                <path d="M5 5 L35 5 L55 25 L35 45 L5 45 L25 25 Z" fill="#e00"/>
-                <path d="M75 5 L45 5 L25 25 L45 45 L75 45 L55 25 Z" fill="#e00"/>
+            <svg class="national-rail-logo" viewBox="0 0 100 62" aria-label="National Rail" role="img">
+                <path d="M76 4 L94 17 H30 L70 45 H6 L24 58" fill="none" stroke="#e00" stroke-width="8" stroke-miterlimit="10"/>
             </svg>
             <div class="stop-header">
                 <h2>${station.name}</h2>
@@ -210,7 +210,7 @@ function renderTrainStationCard(board: TrainDepartureBoard, errorMessage?: strin
             <div class="card-meta">
                 <span class="distance">${formatDistance(station.distanceMeters)}</span>
                 <a href="${directionsUrl}" class="directions-link" target="_blank" rel="noopener" aria-label="Get walking directions to this station">Directions</a>
-                <button class="${favoriteClass}" data-crs-code="${station.crsCode}" aria-pressed="${favoriteAriaPressed}" aria-label="${favoriteAriaLabel}">${favoriteText}</button>
+                <button class="${favoriteClass}" data-crs-code="${station.crsCode}" aria-pressed="${favoriteAriaPressed}" aria-label="${favoriteAriaLabel}" title="${favoriteAriaLabel}">${favoriteText}</button>
             </div>
             <div class="departures-list">${departuresHtml}</div>
         </div>
@@ -269,6 +269,23 @@ function applyRouteFilter(items: DisplayItem[]): DisplayItem[] {
         }
         return filtered;
     }, []);
+}
+
+/**
+ * Render a bar saying which routes the list is filtered to, with a way to clear it
+ */
+function renderFilterStatus(): string {
+    const selectedRoutes = [...getSelectedRoutes()].sort((a, b) =>
+        a.localeCompare(b, undefined, { numeric: true })
+    );
+    if (selectedRoutes.length === 0) return '';
+
+    return `
+        <div class="filter-status">
+            <span>Showing routes ${selectedRoutes.map(escapeHtml).join(', ')}</span>
+            <button id="filter-status-clear" class="filter-status-clear" type="button">Show all</button>
+        </div>
+    `;
 }
 
 /**
@@ -336,7 +353,7 @@ export function displayItems(
     const filtered = applyRouteFilter(sorted);
     const emptyMessage =
         selectedRoutesCount > 0 ? 'No buses match your selected routes' : 'No departures available';
-    let html = renderItems(filtered, emptyMessage);
+    let html = renderFilterStatus() + renderItems(filtered, emptyMessage);
 
     // Add "Show more stops" button if applicable, or a closing note once the
     // search has been expanded as far as it will go

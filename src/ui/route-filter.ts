@@ -130,6 +130,14 @@ function setupRouteFilterHandlers(): void {
     const list = document.getElementById('route-filter-list');
     list?.addEventListener('change', handleRouteFilterListChange);
 
+    // "Show all" in the filter status bar above the departures (re-rendered each time)
+    const departures = document.getElementById('departures-container');
+    departures?.addEventListener('click', e => {
+        if (e.target instanceof Element && e.target.closest('#filter-status-clear')) {
+            handleClearFilter();
+        }
+    });
+
     const overlay = document.getElementById('route-filter-modal');
     overlay?.addEventListener('click', e => {
         if (e.target === overlay) {

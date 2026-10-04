@@ -246,7 +246,8 @@
             }
             .distance {
                 color: var(--color-text-muted);
-                font-size: 0.875rem;
+                font-size: 1rem;
+                margin-right: auto;
             }
             .departure-row {
                 display: flex;
@@ -266,13 +267,17 @@
                 font-weight: 600;
                 min-width: 3rem;
                 text-align: center;
-                font-size: 0.875rem;
+                font-size: 1rem;
+                flex-shrink: 0;
             }
             .destination {
                 flex: 1;
-                margin-left: 1rem;
-                font-size: 0.9rem;
+                min-width: 0;
+                margin: 0 0.75rem;
+                font-size: 1.05rem;
+                line-height: 1.3;
                 color: var(--color-text-strong);
+                overflow-wrap: anywhere;
             }
             .time-container {
                 display: flex;
@@ -280,10 +285,12 @@
                 gap: 0.5rem;
             }
             .time {
-                font-weight: 600;
+                font-weight: 700;
+                font-size: 1.15rem;
                 color: var(--color-realtime);
                 min-width: 3.5rem;
                 text-align: right;
+                white-space: nowrap;
             }
             .time.delayed {
                 color: var(--color-delayed);
@@ -378,6 +385,11 @@
                 align-items: center;
                 flex-wrap: wrap;
                 gap: 0.25rem;
+                margin-bottom: 0.5rem;
+                padding-right: 2.5rem; /* room for the National Rail logo */
+            }
+            .stop-header h2 {
+                margin: 0;
             }
             .station-badge {
                 display: inline-block;
@@ -398,8 +410,8 @@
                 position: absolute;
                 top: 0.75rem;
                 right: 0.75rem;
-                width: 28px;
-                height: 18px;
+                width: 32px;
+                height: 20px;
             }
             .train-departure-row {
                 display: flex;
@@ -440,13 +452,14 @@
                 display: inline-flex;
                 align-items: center;
                 gap: 0.25rem;
-                padding: 0.5rem 0.75rem;
+                justify-content: center;
+                padding: 0.4rem 0.75rem;
                 min-height: 44px;
                 min-width: 44px;
-                background: var(--color-border);
+                background: transparent;
                 color: var(--color-link);
                 text-decoration: none;
-                font-size: 0.875rem;
+                font-size: 1rem;
                 font-weight: 500;
                 border-radius: var(--radius-md);
                 border: 1px solid var(--color-border-strong);
@@ -470,10 +483,12 @@
                 background: transparent;
                 border: 1px solid var(--color-border-strong);
                 border-radius: var(--radius-sm);
-                font-size: 0.8rem;
+                border-radius: var(--radius-md);
+                font-size: 1.35rem;
+                line-height: 1;
                 color: var(--color-text-muted);
                 cursor: pointer;
-                padding: 0.5rem 0.75rem;
+                padding: 0.25rem 0.5rem;
                 min-height: 44px;
                 min-width: 44px;
                 transition: all 0.15s ease;
@@ -523,7 +538,8 @@
             }
             .route-filter-list {
                 display: flex;
-                flex-direction: column;
+                flex-wrap: wrap;
+                align-content: flex-start;
                 gap: 0.5rem;
                 max-height: 45vh;
                 overflow-y: auto;
@@ -533,10 +549,43 @@
             .route-filter-item {
                 display: flex;
                 align-items: center;
-                gap: 0.75rem;
-                padding: 0.5rem;
-                border: 1px solid var(--color-border);
+                gap: 0.5rem;
+                padding: 0.4rem 0.6rem;
+                min-height: 44px;
+                border: 1px solid var(--color-border-strong);
                 border-radius: var(--radius-md);
+                cursor: pointer;
+            }
+            .route-filter-item:has(input:checked) {
+                border-color: var(--color-favorite);
+                background: var(--color-favorite-bg);
+            }
+            /* Filter status bar above the departures */
+            .filter-status {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                justify-content: space-between;
+                gap: 0.75rem;
+                margin-bottom: 1rem;
+                padding: 0.5rem 0.75rem;
+                border: 1px solid var(--color-favorite);
+                border-radius: var(--radius-md);
+                background: var(--color-favorite-bg);
+                color: var(--color-text-strong);
+                font-size: 1rem;
+                font-weight: 500;
+            }
+            .filter-status-clear {
+                flex-shrink: 0;
+                font: inherit;
+                min-height: 44px;
+                padding: 0.4rem 0.75rem;
+                border: 1px solid var(--color-border-strong);
+                border-radius: var(--radius-md);
+                background: transparent;
+                color: var(--color-link);
+                font-weight: 600;
                 cursor: pointer;
             }
             .route-filter-item:hover {
@@ -637,6 +686,7 @@
             .header-controls {
                 display: flex;
                 align-items: center;
+                flex-wrap: wrap;
                 gap: 0.5rem;
             }
             .text-size-toggle {
@@ -964,31 +1014,34 @@
                     gap: 0.5rem;
                 }
                 .departure-row {
-                    flex-wrap: wrap;
-                    gap: 0.5rem;
                     padding: 0.75rem 0;
                 }
                 .destination {
+                    margin: 0 0.5rem;
+                }
+                .train-departure-row {
+                    flex-wrap: wrap;
+                    row-gap: 0.4rem;
+                }
+                .train-departure-row .destination {
                     flex-basis: 100%;
-                    margin-left: 0;
+                    margin: 0;
                     order: -1;
+                }
+                .train-departure-row .time-container {
+                    margin-left: auto;
                 }
                 .line-badge {
                     min-width: 2.5rem;
                 }
                 .time-container {
-                    margin-left: auto;
+                    gap: 0.35rem;
                 }
                 .stop-header {
                     gap: 0.5rem;
                 }
-                .favorite-btn {
-                    padding: 0.4rem 0.6rem;
-                    font-size: 0.75rem;
-                }
                 .directions-link {
                     padding: 0.4rem 0.6rem;
-                    font-size: 0.8rem;
                 }
             }
 

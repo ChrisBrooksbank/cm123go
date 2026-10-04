@@ -40,6 +40,8 @@ import {
     showLoadingDepartures,
     SHOW_MORE_LABEL,
     SHOW_MORE_BUSY_LABEL,
+    FAVORITE_ICON,
+    FAVORITED_ICON,
 } from './render';
 import { triggerHapticFeedback } from '@/utils/settings';
 
@@ -112,12 +114,13 @@ function handleFavoriteClick(e: Event): void {
 
     // Update button appearance and ARIA attributes immediately
     btn.classList.toggle('active', isNowFavorite);
-    btn.textContent = isNowFavorite ? 'Favorited' : 'Favorite';
+    btn.textContent = isNowFavorite ? FAVORITED_ICON : FAVORITE_ICON;
     btn.setAttribute('aria-pressed', isNowFavorite ? 'true' : 'false');
-    btn.setAttribute(
-        'aria-label',
-        isNowFavorite ? `Remove ${name} from favorites` : `Add ${name} to favorites`
-    );
+    const favoriteLabel = isNowFavorite
+        ? `Remove ${name} from favorites`
+        : `Add ${name} to favorites`;
+    btn.setAttribute('aria-label', favoriteLabel);
+    btn.setAttribute('title', favoriteLabel);
 
     // Announce state change to screen readers
     announceStatus(isNowFavorite ? `${name} added to favorites` : `${name} removed from favorites`);
