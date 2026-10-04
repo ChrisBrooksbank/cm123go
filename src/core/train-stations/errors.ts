@@ -19,11 +19,6 @@ export class TrainStationError extends Error {
         this.name = 'TrainStationError';
     }
 
-    /** Check if departures unavailable */
-    isDeparturesUnavailable(): boolean {
-        return this.code === TrainStationErrorCode.DEPARTURES_UNAVAILABLE;
-    }
-
     /** Check if rate limited */
     isRateLimited(): boolean {
         return this.code === TrainStationErrorCode.RATE_LIMITED;

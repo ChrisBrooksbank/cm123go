@@ -117,20 +117,18 @@ import { retryWithBackoff } from '@utils/helpers';
 const data = await retryWithBackoff(() => fetchData());
 ```
 
-Other utilities available:
+Debounce rapid calls:
 
 ```typescript
-import { debounce, throttle, IntervalManager } from '@utils/helpers';
-
-// Debounce rapid calls
+import { debounce } from '@utils/helpers';
 const debouncedSearch = debounce(search, 300);
+```
 
-// Throttle frequent updates
-const throttledUpdate = throttle(update, 1000);
+Escape any API or user text before putting it into HTML:
 
-// Manage intervals with automatic cleanup
-const intervalId = IntervalManager.register(() => poll(), 5000);
-IntervalManager.clear(intervalId); // Or clearAll() on shutdown
+```typescript
+import { escapeHtml } from '@utils/html';
+html += `<span>${escapeHtml(departure.destination)}</span>`;
 ```
 
 ### Error Handling Pattern

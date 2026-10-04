@@ -24,11 +24,6 @@ export class GeolocationError extends Error {
         return this.code === GeolocationErrorCode.PERMISSION_DENIED;
     }
 
-    /** Check if this is a timeout error */
-    isTimeout(): boolean {
-        return this.code === GeolocationErrorCode.TIMEOUT;
-    }
-
     /** Check if geolocation is not supported */
     isNotSupported(): boolean {
         return this.code === GeolocationErrorCode.NOT_SUPPORTED;

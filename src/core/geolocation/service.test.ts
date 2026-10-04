@@ -204,55 +204,6 @@ describe('GeolocationService', () => {
         });
     });
 
-    describe('getLocationFromPostcode', () => {
-        it('should return location for valid postcode', async () => {
-            global.fetch = vi.fn().mockResolvedValue({
-                ok: true,
-                json: () =>
-                    Promise.resolve({
-                        status: 200,
-                        result: {
-                            postcode: 'CM1 1AB',
-                            latitude: 51.7356,
-                            longitude: 0.4685,
-                        },
-                    }),
-            });
-
-            const result = await GeolocationService.getLocationFromPostcode('CM1 1AB');
-
-            expect(result.success).toBe(true);
-            if (result.success) {
-                expect(result.location.coordinates.latitude).toBe(51.7356);
-                expect(result.location.source).toBe('postcode');
-                expect(result.location.postcode).toBe('CM1 1AB');
-            }
-        });
-
-        it('should return error for invalid postcode format', async () => {
-            const result = await GeolocationService.getLocationFromPostcode('INVALID');
-
-            expect(result.success).toBe(false);
-            if (!result.success) {
-                expect(result.error.code).toBe(GeolocationErrorCode.POSTCODE_NOT_FOUND);
-            }
-        });
-
-        it('should return error when postcode not found', async () => {
-            global.fetch = vi.fn().mockResolvedValue({
-                ok: false,
-                status: 404,
-            });
-
-            const result = await GeolocationService.getLocationFromPostcode('ZZ99 9ZZ');
-
-            expect(result.success).toBe(false);
-            if (!result.success) {
-                expect(result.error.code).toBe(GeolocationErrorCode.POSTCODE_NOT_FOUND);
-            }
-        });
-    });
-
     describe('calculateDistance', () => {
         it('should calculate distance between two points', () => {
             const chelmsford = { latitude: 51.7356, longitude: 0.4685 };
