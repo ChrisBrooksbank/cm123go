@@ -1,7 +1,9 @@
 {
     "debug": false,
-    "api": {
-        "baseUrl": "https://api.example.com",
-        "timeout": 5000
+    "busStops": {
+        "bodsApiKey": "your-bods-api-key"
+    },
+    "trainStations": {
+        "railDataApiKey": "your-rail-data-api-key"
     }
 }
