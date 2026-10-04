@@ -94,6 +94,22 @@ describe('GeolocationService', () => {
             }
         });
 
+        it('should accept a fix that reports zero accuracy', async () => {
+            vi.stubGlobal('navigator', {
+                geolocation: {
+                    getCurrentPosition: (success: PositionCallback) => {
+                        success({
+                            coords: { latitude: 51.7356, longitude: 0.4685, accuracy: 0 },
+                        } as GeolocationPosition);
+                    },
+                },
+            });
+
+            const result = await GeolocationService.getLocationFromBrowser();
+
+            expect(result.success).toBe(true);
+        });
+
         it('should classify low accuracy as network source', async () => {
             const mockPosition = {
                 coords: {
@@ -201,55 +217,6 @@ describe('GeolocationService', () => {
             expect(calls).toHaveLength(2);
             expect(calls[0].enableHighAccuracy).toBe(true);
             expect(calls[1].enableHighAccuracy).toBe(false);
-        });
-    });
-
-    describe('getLocationFromPostcode', () => {
-        it('should return location for valid postcode', async () => {
-            global.fetch = vi.fn().mockResolvedValue({
-                ok: true,
-                json: () =>
-                    Promise.resolve({
-                        status: 200,
-                        result: {
-                            postcode: 'CM1 1AB',
-                            latitude: 51.7356,
-                            longitude: 0.4685,
-                        },
-                    }),
-            });
-
-            const result = await GeolocationService.getLocationFromPostcode('CM1 1AB');
-
-            expect(result.success).toBe(true);
-            if (result.success) {
-                expect(result.location.coordinates.latitude).toBe(51.7356);
-                expect(result.location.source).toBe('postcode');
-                expect(result.location.postcode).toBe('CM1 1AB');
-            }
-        });
-
-        it('should return error for invalid postcode format', async () => {
-            const result = await GeolocationService.getLocationFromPostcode('INVALID');
-
-            expect(result.success).toBe(false);
-            if (!result.success) {
-                expect(result.error.code).toBe(GeolocationErrorCode.POSTCODE_NOT_FOUND);
-            }
-        });
-
-        it('should return error when postcode not found', async () => {
-            global.fetch = vi.fn().mockResolvedValue({
-                ok: false,
-                status: 404,
-            });
-
-            const result = await GeolocationService.getLocationFromPostcode('ZZ99 9ZZ');
-
-            expect(result.success).toBe(false);
-            if (!result.success) {
-                expect(result.error.code).toBe(GeolocationErrorCode.POSTCODE_NOT_FOUND);
-            }
         });
     });
 

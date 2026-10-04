@@ -4,8 +4,6 @@
  * Provides consistent logging with timestamps and log levels
  */
 
-type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
-
 interface LogLevels {
     DEBUG: number;
     INFO: number;
@@ -63,10 +61,6 @@ export const Logger = {
         if (this.currentLevel <= this.levels.INFO) {
             console.log(...this._format('SUCCESS', '✅', message, ...args));
         }
-    },
-
-    setLevel(level: LogLevel): void {
-        this.currentLevel = this.levels[level] ?? 1;
     },
 
     setDebugMode(enabled: boolean): void {

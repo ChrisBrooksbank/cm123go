@@ -16,7 +16,7 @@ export type Coordinates = z.infer<typeof CoordinatesSchema>;
 /** Location with coordinates and optional metadata */
 export const LocationSchema = z.object({
     coordinates: CoordinatesSchema,
-    accuracy: z.number().positive().optional(),
+    accuracy: z.number().nonnegative().optional(),
     source: z.enum(['gps', 'network', 'postcode', 'manual']),
     timestamp: z.number(),
     postcode: z.string().optional(),
@@ -72,7 +72,7 @@ export type NearbyBusStop = z.infer<typeof NearbyBusStopSchema>;
 
 /** SIRI-VM vehicle occupancy (from operators with passenger-counting equipment; rarely populated) */
 export const OccupancySchema = z.enum(['seatsAvailable', 'standingAvailable', 'full']);
-export type Occupancy = z.infer<typeof OccupancySchema>;
+type Occupancy = z.infer<typeof OccupancySchema>;
 
 /** Departure information */
 const DepartureSchema = z.object({

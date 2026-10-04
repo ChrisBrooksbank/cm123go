@@ -41,11 +41,11 @@ const API_CIRCUIT_CONFIGS: Record<string, Partial<CircuitBreakerConfig>> = {
         successThreshold: 1,
         name: 'BODS GTFS',
     },
-    huxley: {
+    raildata: {
         failureThreshold: 3,
         resetTimeout: 60000,
         successThreshold: 2,
-        name: 'Huxley2 (National Rail)',
+        name: 'Rail Data (National Rail)',
     },
 };
 

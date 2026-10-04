@@ -128,30 +128,4 @@ export const TrainStationCache = {
             Logger.warn('IndexedDB not available for caching train departures', error);
         }
     },
-
-    /**
-     * Clear all cached train departures
-     */
-    async clear(): Promise<void> {
-        try {
-            const db = await openDatabase();
-
-            return await new Promise(resolve => {
-                const transaction = db.transaction(TRAIN_DEPARTURES_STORE, 'readwrite');
-                transaction.objectStore(TRAIN_DEPARTURES_STORE).clear();
-
-                transaction.oncomplete = () => {
-                    Logger.info('Train departures cache cleared');
-                    resolve();
-                };
-
-                transaction.onerror = () => {
-                    Logger.warn('Failed to clear train departures cache');
-                    resolve();
-                };
-            });
-        } catch {
-            Logger.warn('IndexedDB not available for clearing train cache');
-        }
-    },
 };

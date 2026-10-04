@@ -229,31 +229,36 @@ function normalizeLineRef(lineRef: string): string {
     return parts[parts.length - 1].trim().toUpperCase();
 }
 
+/** Lowercase and strip punctuation/extra spaces so destination names can be compared */
+function normalizeDestination(name: string): string {
+    return name
+        .toLowerCase()
+        .replace(/[^a-z0-9 ]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 /**
- * Enrich a departure's destination using SIRI-VM data if available
+ * Find the live vehicle running this departure: same route AND heading to the same place.
+ * Matching on route alone could pick a bus going the other way, showing its destination
+ * and occupancy against this departure. First Bus names are sometimes truncated
+ * ("Broomfield Hosp"), so a name that starts with the other counts as the same place.
  */
-function enrichDestinationFromSiriVm(departure: Departure, vehicles: VehicleActivity[]): string {
-    const normalizedLine = normalizeLineRef(departure.line);
+function findVehicleForDeparture(
+    departure: Departure,
+    vehicles: VehicleActivity[]
+): VehicleActivity | undefined {
+    const line = normalizeLineRef(departure.line);
+    const destination = normalizeDestination(departure.destination);
+    if (!destination) return undefined;
 
-    // Find matching vehicle by line
-    const matchingVehicle = vehicles.find(
-        v => normalizeLineRef(v.lineRef) === normalizedLine && v.destinationName
-    );
-
-    if (!matchingVehicle?.destinationName) {
-        return departure.destination;
-    }
-
-    const siriDest = matchingVehicle.destinationName;
-    const firstBusDest = departure.destination;
-
-    // Use SIRI-VM destination if it's longer (likely more complete)
-    if (siriDest.length > firstBusDest.length) {
-        Logger.debug('Enriched destination', { original: firstBusDest, enriched: siriDest });
-        return siriDest;
-    }
-
-    return departure.destination;
+    return vehicles.find(vehicle => {
+        if (normalizeLineRef(vehicle.lineRef) !== line || !vehicle.destinationName) return false;
+        const vehicleDestination = normalizeDestination(vehicle.destinationName);
+        return (
+            vehicleDestination.startsWith(destination) || destination.startsWith(vehicleDestination)
+        );
+    });
 }
 
 /**
@@ -273,16 +278,15 @@ async function enrichFirstBusDepartures(
         if (vehicles.length === 0) return departures;
 
         return departures.map(dep => {
-            const normalizedLine = normalizeLineRef(dep.line);
-            const matchingVehicle = vehicles.find(
-                v => normalizeLineRef(v.lineRef) === normalizedLine
-            );
+            const vehicle = findVehicleForDeparture(dep, vehicles);
+            if (!vehicle) return dep;
 
-            return {
-                ...dep,
-                destination: enrichDestinationFromSiriVm(dep, vehicles),
-                occupancy: matchingVehicle?.occupancy,
-            };
+            // Prefer the SIRI-VM name when it's the fuller version of the same destination
+            const siriDestination = vehicle.destinationName ?? '';
+            const destination =
+                siriDestination.length > dep.destination.length ? siriDestination : dep.destination;
+
+            return { ...dep, destination, occupancy: vehicle.occupancy };
         });
     } catch {
         return departures; // Graceful fallback

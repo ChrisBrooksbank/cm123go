@@ -14,13 +14,6 @@ import type { BusStop, Coordinates, NearbyBusStop, DepartureBoard } from '@/type
 import { BusStopErrorCode } from '@/types';
 
 /**
- * Result type for nearest stop with departures
- */
-type NearestStopResult =
-    | { success: true; board: DepartureBoard }
-    | { success: false; error: BusStopError };
-
-/**
  * Partial failure info for a single stop
  */
 interface StopFetchError {
@@ -262,95 +255,6 @@ export const BusStopService = {
                 ...stop,
                 distanceMeters: GeolocationService.calculateDistance(location, stop.coordinates),
             }));
-    },
-
-    /**
-     * Get nearest stop with departures
-     * Main entry point for the feature
-     *
-     * @param location - User's current coordinates
-     * @returns DepartureBoard with stop info and next departures
-     */
-    async getNearestWithDepartures(location: Coordinates): Promise<NearestStopResult> {
-        try {
-            // Find nearest stop
-            const [nearest] = await this.findNearest(location, 1);
-
-            // Try cache first for departures
-            const cachedDepartures = await BusStopCache.getDepartures(nearest.atcoCode);
-
-            if (cachedDepartures && cachedDepartures.length > 0) {
-                Logger.debug('Using cached departures', {
-                    atcoCode: nearest.atcoCode,
-                });
-                return {
-                    success: true,
-                    board: {
-                        stop: nearest,
-                        departures: cachedDepartures,
-                        lastUpdated: Date.now(),
-                        isStale: true,
-                    },
-                };
-            }
-
-            // Fetch fresh departures using BODS
-            const departures = await fetchDeparturesForStop(nearest, 3);
-            await BusStopCache.setDepartures(nearest.atcoCode, departures);
-
-            return {
-                success: true,
-                board: {
-                    stop: nearest,
-                    departures,
-                    lastUpdated: Date.now(),
-                    isStale: false,
-                },
-            };
-        } catch (error) {
-            const busError =
-                error instanceof BusStopError
-                    ? error
-                    : new BusStopError(String(error), BusStopErrorCode.DEPARTURES_UNAVAILABLE);
-
-            Logger.warn('Failed to get departures', {
-                code: busError.code,
-                message: busError.message,
-            });
-
-            return { success: false, error: busError };
-        }
-    },
-
-    /**
-     * Force refresh departures (bypass cache)
-     * @param location - User's current coordinates
-     */
-    async refreshDepartures(location: Coordinates): Promise<NearestStopResult> {
-        try {
-            const [nearest] = await this.findNearest(location, 1);
-
-            // Skip cache, fetch fresh from BODS
-            const departures = await fetchDeparturesForStop(nearest, 3);
-            await BusStopCache.setDepartures(nearest.atcoCode, departures);
-
-            return {
-                success: true,
-                board: {
-                    stop: nearest,
-                    departures,
-                    lastUpdated: Date.now(),
-                    isStale: false,
-                },
-            };
-        } catch (error) {
-            const busError =
-                error instanceof BusStopError
-                    ? error
-                    : new BusStopError(String(error), BusStopErrorCode.DEPARTURES_UNAVAILABLE);
-
-            return { success: false, error: busError };
-        }
     },
 
     /**

@@ -222,32 +222,4 @@ export const BusStopCache = {
             Logger.warn('IndexedDB not available for caching departures', error);
         }
     },
-
-    /**
-     * Clear all cached data
-     */
-    async clear(): Promise<void> {
-        try {
-            const db = await openDatabase();
-
-            return await new Promise(resolve => {
-                const transaction = db.transaction([STOPS_STORE, DEPARTURES_STORE], 'readwrite');
-
-                transaction.objectStore(STOPS_STORE).clear();
-                transaction.objectStore(DEPARTURES_STORE).clear();
-
-                transaction.oncomplete = () => {
-                    Logger.info('Cache cleared');
-                    resolve();
-                };
-
-                transaction.onerror = () => {
-                    Logger.warn('Failed to clear cache');
-                    resolve();
-                };
-            });
-        } catch {
-            Logger.warn('IndexedDB not available for clearing cache');
-        }
-    },
 };
