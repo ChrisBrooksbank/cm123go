@@ -12,6 +12,8 @@ import {
     GeolocationService,
     setUserLocation,
     deduplicateBySharedLines,
+    isWithinChelmsfordArea,
+    OUTSIDE_AREA_MESSAGE,
 } from '@/core';
 import { FavoritesManager } from '@/utils/favorites';
 import { reverseGeocodeToPostcode } from '@/api';
@@ -275,6 +277,7 @@ export async function handleRefresh(): Promise<void> {
     }
     announceStatus('Updating departure times');
 
+    let refreshed = false;
     try {
         // Get train stations first so we can reference them for error cases
         const trainStations = TrainStationService.getStationsByDistance(userLocation);
@@ -351,6 +354,9 @@ export async function handleRefresh(): Promise<void> {
                 displayError(busResult.error.getUserMessage());
             }
         }
+        refreshed = true;
+    } catch (error) {
+        Logger.error('Failed to refresh departures', String(error));
     } finally {
         if (refreshBtn instanceof HTMLButtonElement) {
             refreshBtn.disabled = false;
@@ -360,7 +366,7 @@ export async function handleRefresh(): Promise<void> {
         if (container) {
             container.setAttribute('aria-busy', 'false');
         }
-        announceStatus('Times updated');
+        announceStatus(refreshed ? 'Times updated' : 'Failed to update times');
     }
 }
 
@@ -422,6 +428,26 @@ async function handleLocationUpdate(): Promise<void> {
                 true
             );
             // Restore previous display after 3 seconds
+            setTimeout(() => {
+                const savedLocation = getSavedLocation();
+                if (savedLocation?.postcode) {
+                    updatePostcodeDisplay(
+                        `<span class="status">${savedLocation.postcode}</span>`,
+                        true
+                    );
+                }
+            }, 3000);
+            return;
+        }
+
+        // Don't switch to a location the app has no stops for - say so instead
+        if (!isWithinChelmsfordArea(result.location.coordinates)) {
+            Logger.info('Updated location is outside Chelmsford, keeping current location');
+            announceStatus(OUTSIDE_AREA_MESSAGE);
+            updatePostcodeDisplay(
+                '<span class="status" style="background: var(--color-error-bg); color: var(--color-error);">Outside Chelmsford</span>',
+                true
+            );
             setTimeout(() => {
                 const savedLocation = getSavedLocation();
                 if (savedLocation?.postcode) {

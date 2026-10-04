@@ -4,6 +4,29 @@
  */
 
 /**
+ * How far in the past a clock time can be before it's treated as tomorrow's.
+ * Departure feeds often still list a bus for a minute or two after its time
+ * has passed - those are late/due buses, not ones 24 hours away.
+ */
+const PAST_TIME_GRACE_MS = 15 * 60 * 1000;
+
+/**
+ * Resolve a clock time to the nearest sensible Date: today, or tomorrow if the
+ * time passed more than PAST_TIME_GRACE_MS ago (e.g. 00:10 seen at 23:50)
+ */
+function resolveClockTime(hours: number, minutes: number, seconds = 0): Date {
+    const now = new Date();
+    const date = new Date(now);
+    date.setHours(hours, minutes, seconds, 0);
+
+    if (now.getTime() - date.getTime() > PAST_TIME_GRACE_MS) {
+        date.setDate(date.getDate() + 1);
+    }
+
+    return date;
+}
+
+/**
  * Parse time string to minutes until arrival
  * Handles multiple formats: "HH:MM", "X mins", "Due"
  * @param timeStr - Time string in various formats
@@ -35,17 +58,8 @@ export function calculateMinutesUntil(timeStr: string): number {
         ) {
             return 0;
         }
-        const now = new Date();
-
-        const departureDate = new Date();
-        departureDate.setHours(hours, minutes, 0, 0);
-
-        // If the time is earlier than now, assume it's tomorrow
-        if (departureDate < now) {
-            departureDate.setDate(departureDate.getDate() + 1);
-        }
-
-        const diffMs = departureDate.getTime() - now.getTime();
+        const departureDate = resolveClockTime(hours, minutes);
+        const diffMs = departureDate.getTime() - Date.now();
         return Math.max(0, Math.round(diffMs / 60000));
     }
 
@@ -53,9 +67,9 @@ export function calculateMinutesUntil(timeStr: string): number {
 }
 
 /**
- * Parse HH:MM:SS or HH:MM time string to Date (today or tomorrow if past)
+ * Parse HH:MM:SS or HH:MM time string to Date (today, or tomorrow if well past)
  * @param timeStr - Time string in "HH:MM:SS" or "HH:MM" format
- * @returns Date object for today (or tomorrow if time has passed)
+ * @returns Date object for today (or tomorrow if the time passed a while ago)
  */
 export function parseTimeToDate(timeStr: string): Date {
     const parts = timeStr.split(':').map(Number);
@@ -63,15 +77,7 @@ export function parseTimeToDate(timeStr: string): Date {
     const minutes = parts[1] || 0;
     const seconds = parts[2] || 0;
 
-    const date = new Date();
-    date.setHours(hours, minutes, seconds, 0);
-
-    // If time is earlier than now, assume tomorrow
-    if (date < new Date()) {
-        date.setDate(date.getDate() + 1);
-    }
-
-    return date;
+    return resolveClockTime(hours, minutes, seconds);
 }
 
 /**

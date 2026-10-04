@@ -3,7 +3,7 @@
  * Orchestrates initialization and coordinates between modules
  */
 
-import { loadConfig, getConfig } from '@/config';
+import { loadConfig } from '@/config';
 import { Logger } from '@/utils/logger';
 import {
     GeolocationService,
@@ -12,6 +12,8 @@ import {
     TrainDepartureService,
     setUserLocation,
     initializeState,
+    isWithinChelmsfordArea,
+    OUTSIDE_AREA_MESSAGE,
     type DisplayItem,
 } from '@/core';
 import { reverseGeocodeToPostcode, geocodePostcode } from '@/api';
@@ -51,18 +53,6 @@ import {
 } from '@/utils/settings';
 import { setupHelpHandlers, showHelpIfFirstVisit } from '@/ui/help';
 import { initializeRouteFilter } from '@/ui/route-filter';
-
-/**
- * Check if coordinates are within the Chelmsford service area
- * Returns false if user appears far from Chelmsford (e.g., VPN user)
- */
-function isWithinChelmsfordArea(coordinates: Coordinates): boolean {
-    const config = getConfig();
-    const { chelmsfordCenter, maxDistanceFromCenter } = config.busStops;
-    const distance = GeolocationService.calculateDistance(coordinates, chelmsfordCenter);
-    Logger.debug('Distance from Chelmsford', { distance: Math.round(distance) });
-    return distance <= maxDistanceFromCenter;
-}
 
 // PWA install prompt
 interface BeforeInstallPromptEvent extends Event {
@@ -214,6 +204,16 @@ function setupPostcodeForm(): void {
         void (async () => {
             try {
                 const { coordinates, normalizedPostcode } = await geocodePostcode(enteredPostcode);
+                if (!isWithinChelmsfordArea(coordinates)) {
+                    showPostcodeError(
+                        `${normalizedPostcode} is outside Chelmsford. This app only covers the Chelmsford area.`
+                    );
+                    showPostcodeEntryForm(
+                        'Enter a Chelmsford postcode:',
+                        lastSuccessfulPostcode ?? undefined
+                    );
+                    return;
+                }
                 setUserLocation(coordinates);
                 lastSuccessfulPostcode = normalizedPostcode;
                 updatePostcodeDisplay(`<span class="status">${normalizedPostcode}</span>`, true);
@@ -382,6 +382,23 @@ function showPostcodeFallbackIfLocationIsSlow(): () => void {
 }
 
 /**
+ * Use a previously saved location and show its departures
+ * @param note - Optional explanation shown next to the postcode
+ */
+async function showSavedLocation(
+    savedLocation: NonNullable<ReturnType<typeof getSavedLocation>>,
+    note?: string
+): Promise<void> {
+    setUserLocation(savedLocation.coordinates);
+    const displayPostcode = savedLocation.postcode || 'Saved location';
+    const noteHtml = note ? ` ${note}` : '';
+    updatePostcodeDisplay(`<span class="status">${displayPostcode}</span>${noteHtml}`, true);
+    showLoadingDepartures();
+    await fetchAndDisplayDepartures(savedLocation.coordinates);
+    showRefreshContainer();
+}
+
+/**
  * Initialize the application
  */
 async function init(): Promise<void> {
@@ -420,6 +437,12 @@ async function init(): Promise<void> {
         // Set up manual postcode entry form (early, so it works if geolocation fails)
         setupPostcodeForm();
 
+        // Set up refresh button, auto-refresh and install banner early too, so they work
+        // whichever way the location ends up being set (GPS, saved location or postcode)
+        setupRefreshButton();
+        setupAutoRefresh();
+        setupInstallBanner();
+
         // Check if geolocation is supported
         if (!GeolocationService.isSupported()) {
             showPostcodeEntryForm(
@@ -442,12 +465,7 @@ async function init(): Promise<void> {
             const savedLocation = getSavedLocation();
             if (savedLocation) {
                 Logger.info('Using saved location as fallback');
-                setUserLocation(savedLocation.coordinates);
-                const displayPostcode = savedLocation.postcode || 'Saved location';
-                updatePostcodeDisplay(`<span class="status">${displayPostcode}</span>`, true);
-                showLoadingDepartures();
-                await fetchAndDisplayDepartures(savedLocation.coordinates);
-                showRefreshContainer();
+                await showSavedLocation(savedLocation);
                 return;
             }
 
@@ -466,17 +484,16 @@ async function init(): Promise<void> {
             const savedLocation = getSavedLocation();
             if (savedLocation && isWithinChelmsfordArea(savedLocation.coordinates)) {
                 Logger.info('Using saved location (within Chelmsford)');
-                setUserLocation(savedLocation.coordinates);
-                const displayPostcode = savedLocation.postcode || 'Saved location';
-                updatePostcodeDisplay(`<span class="status">${displayPostcode}</span>`, true);
-                showLoadingDepartures();
-                await fetchAndDisplayDepartures(savedLocation.coordinates);
-                showRefreshContainer();
+                await showSavedLocation(
+                    savedLocation,
+                    "You're outside Chelmsford, so showing your last Chelmsford location"
+                );
                 return;
             }
 
+            displayError(OUTSIDE_AREA_MESSAGE);
             showPostcodeEntryForm(
-                'Please enter a Chelmsford postcode to find nearby stops:',
+                'Enter a Chelmsford postcode to find nearby stops:',
                 lastSuccessfulPostcode ?? undefined
             );
             return;
@@ -508,13 +525,6 @@ async function init(): Promise<void> {
 
         // Fetch and display bus departures + train stations (combined, sorted by distance)
         await fetchAndDisplayDepartures(result.location.coordinates);
-
-        // Set up refresh button and auto-refresh
-        setupRefreshButton();
-        setupAutoRefresh();
-
-        // Set up install banner buttons
-        setupInstallBanner();
 
         // Show help modal for first-time users (after location acquired to avoid blocking permission prompt)
         showHelpIfFirstVisit();

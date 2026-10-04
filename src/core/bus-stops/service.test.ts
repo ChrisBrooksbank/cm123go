@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { setConfig, resetConfig } from '@config/index';
+import { setConfig, resetConfig, getConfig } from '@config/index';
 import { BusStopCache } from './cache';
 import { fetchDeparturesForStop } from '@api/departures';
 import { BusStopService, deduplicateBySharedLines } from './service';
@@ -374,6 +374,52 @@ describe('BusStopService', () => {
                 expect(result.partialFailures).toHaveLength(1);
                 expect(result.partialFailures?.[0].stop.atcoCode).toBe('BROKEN');
             }
+        });
+
+        it('drops empty and duplicate stops, matching getBothDirections', async () => {
+            mockedCache.getStops.mockResolvedValue([
+                makeStop({ atcoCode: 'N1', bearing: 'N', coordinates: northOf(50) }),
+                makeStop({ atcoCode: 'N2', bearing: 'N', coordinates: northOf(100) }),
+                makeStop({ atcoCode: 'S1', bearing: 'S', coordinates: northOf(-50) }),
+                makeStop({ atcoCode: 'S2', bearing: 'S', coordinates: northOf(-100) }),
+            ]);
+            mockedFetchDepartures.mockImplementation(stop => {
+                if (stop.atcoCode === 'S1') return Promise.resolve([]);
+                return Promise.resolve([makeDeparture('1')]);
+            });
+
+            const result = await BusStopService.refreshBothDirections(BASE_LOCATION);
+
+            expect(result.success).toBe(true);
+            if (result.success) {
+                // N2 shares line 1 with N1 (same bearing); S1 has no departures
+                expect(result.boards.map(b => b.stop.atcoCode)).toEqual(['N1', 'S2']);
+            }
+        });
+    });
+
+    describe('init', () => {
+        it('lets lookups use the loaded stops when IndexedDB has none', async () => {
+            const config = getConfig();
+            vi.resetModules();
+            vi.doMock('@api/naptan', () => ({
+                fetchChelmsfordBusStops: vi
+                    .fn()
+                    .mockResolvedValue([
+                        makeStop({ atcoCode: 'LOADED', coordinates: northOf(50) }),
+                    ]),
+            }));
+            mockedCache.getStops.mockResolvedValue(null);
+            (await import('@config/index')).setConfig(config);
+            const { BusStopService: FreshService } = await import('./service');
+
+            // Lookup starts while init is still loading - it should wait, not fail
+            const initDone = FreshService.init();
+            const nearest = await FreshService.findNearest(BASE_LOCATION);
+            await initDone;
+
+            expect(nearest.map(s => s.atcoCode)).toEqual(['LOADED']);
+            vi.doUnmock('@api/naptan');
         });
     });
 });

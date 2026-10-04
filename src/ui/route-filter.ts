@@ -11,6 +11,7 @@ import {
     hasReachedMaxRadius,
 } from '@/core/app-state';
 import { getRouteFilter, setRouteFilter } from '@/utils/settings';
+import { escapeHtml } from '@/utils/html';
 import { displayItems } from './render';
 import { setupAllHandlers } from './event-handlers';
 
@@ -40,11 +41,11 @@ function renderRouteFilterList(): string {
     return availableRoutes
         .map(line => {
             const checked = selectedRoutes.has(line) ? 'checked' : '';
-            const escapedLine = line.replace(/"/g, '&quot;');
+            const escapedLine = escapeHtml(line);
             return `
                 <label class="route-filter-item">
                     <input type="checkbox" value="${escapedLine}" ${checked} />
-                    <span class="line-badge">${line}</span>
+                    <span class="line-badge">${escapedLine}</span>
                 </label>
             `;
         })

@@ -10,7 +10,7 @@ import { BusStopCache } from './cache';
 import { BusStopError } from './errors';
 import { fetchChelmsfordBusStops } from '@api/naptan';
 import { fetchDeparturesForStop } from '@api/departures';
-import type { Coordinates, NearbyBusStop, DepartureBoard } from '@/types';
+import type { BusStop, Coordinates, NearbyBusStop, DepartureBoard } from '@/types';
 import { BusStopErrorCode } from '@/types';
 
 /**
@@ -105,6 +105,33 @@ async function fetchBoardsWithPartialFailures(
 }
 
 /**
+ * Drop boards with no departures, then dedupe same-direction stops sharing lines.
+ * Shared by getBothDirections and refreshBothDirections so a refresh shows the same
+ * set of stops as the initial load.
+ */
+function selectUsefulBoards(boards: DepartureBoard[]): DepartureBoard[] {
+    return deduplicateBySharedLines(boards.filter(b => b.departures.length > 0));
+}
+
+/** Stops loaded by init(), kept in memory in case IndexedDB is unavailable */
+let loadedStops: BusStop[] | null = null;
+
+/** In-flight init() load, so lookups made during startup can wait for it */
+let initPromise: Promise<void> | null = null;
+
+/**
+ * Get all bus stops: from the IndexedDB cache, or else from the stops loaded by init()
+ * (waiting for that load if it's still in progress)
+ */
+async function getAllStops(): Promise<BusStop[] | null> {
+    const cached = await BusStopCache.getStops();
+    if (cached && cached.length > 0) return cached;
+
+    if (initPromise) await initPromise;
+    return loadedStops;
+}
+
+/**
  * Removes redundant stops going the same direction that share bus lines.
  * Keeps the nearest stop when duplicates are found.
  * Logic: if the same bus serves both stops, showing it twice is redundant.
@@ -145,21 +172,25 @@ export const BusStopService = {
      * Call once at app startup (non-blocking)
      */
     async init(): Promise<void> {
-        const cached = await BusStopCache.getStops();
-        if (cached && cached.length > 0) {
-            Logger.debug('Bus stops loaded from cache', { count: cached.length });
-            return;
-        }
+        initPromise = (async () => {
+            const cached = await BusStopCache.getStops();
+            if (cached && cached.length > 0) {
+                Logger.debug('Bus stops loaded from cache', { count: cached.length });
+                return;
+            }
 
-        try {
-            Logger.debug('Fetching bus stops from NAPTAN...');
-            const stops = await fetchChelmsfordBusStops();
-            await BusStopCache.setStops(stops);
-            Logger.success('Bus stops cached', { count: stops.length });
-        } catch (error) {
-            Logger.warn('Failed to fetch bus stops, will retry later', error);
-            // Non-fatal - user can still use app with cached data or retry
-        }
+            try {
+                Logger.debug('Fetching bus stops from NAPTAN...');
+                const stops = await fetchChelmsfordBusStops();
+                loadedStops = stops;
+                await BusStopCache.setStops(stops);
+                Logger.success('Bus stops cached', { count: stops.length });
+            } catch (error) {
+                Logger.warn('Failed to fetch bus stops, will retry later', error);
+                // Non-fatal - user can still use app with cached data or retry
+            }
+        })();
+        await initPromise;
     },
 
     /**
@@ -174,7 +205,7 @@ export const BusStopService = {
         maxResults = 1,
         customRadius?: number
     ): Promise<NearbyBusStop[]> {
-        const stops = await BusStopCache.getStops();
+        const stops = await getAllStops();
 
         if (!stops || stops.length === 0) {
             throw new BusStopError(
@@ -221,7 +252,7 @@ export const BusStopService = {
     async getByAtcoCodes(atcoCodes: string[], location: Coordinates): Promise<NearbyBusStop[]> {
         if (atcoCodes.length === 0) return [];
 
-        const stops = await BusStopCache.getStops();
+        const stops = await getAllStops();
         if (!stops || stops.length === 0) return [];
 
         const atcoSet = new Set(atcoCodes);
@@ -348,19 +379,14 @@ export const BusStopService = {
                 stop => this.getDeparturesForStop(stop)
             );
 
-            // Return success if at least one stop succeeded
-            if (boards.length > 0) {
-                // Filter out stops with no departures, then deduplicate nearby stops with same lines
-                const filteredBoards = boards.filter(b => b.departures.length > 0);
-                const deduplicatedBoards = deduplicateBySharedLines(filteredBoards);
-
-                if (deduplicatedBoards.length > 0) {
-                    return {
-                        success: true,
-                        boards: deduplicatedBoards,
-                        partialFailures: partialFailures.length > 0 ? partialFailures : undefined,
-                    };
-                }
+            // Return success if at least one stop has departures
+            const usefulBoards = selectUsefulBoards(boards);
+            if (usefulBoards.length > 0) {
+                return {
+                    success: true,
+                    boards: usefulBoards,
+                    partialFailures: partialFailures.length > 0 ? partialFailures : undefined,
+                };
             }
 
             // All failed
@@ -538,10 +564,11 @@ export const BusStopService = {
                 }
             );
 
-            if (boards.length > 0) {
+            const usefulBoards = selectUsefulBoards(boards);
+            if (usefulBoards.length > 0) {
                 return {
                     success: true,
-                    boards,
+                    boards: usefulBoards,
                     partialFailures: partialFailures.length > 0 ? partialFailures : undefined,
                 };
             }

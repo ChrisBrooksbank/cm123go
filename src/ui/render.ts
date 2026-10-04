@@ -6,6 +6,7 @@
 import { getConfig } from '@/config';
 import { getDirectionsUrl } from '@/utils/maps-link';
 import { FavoritesManager } from '@/utils/favorites';
+import { escapeHtml } from '@/utils/html';
 import type { Departure, DepartureBoard, TrainDeparture, TrainDepartureBoard } from '@/types';
 import {
     type DisplayItem,
@@ -31,7 +32,7 @@ function getBearingLabel(bearing: string | undefined): string {
         SE: 'South-East',
         SW: 'South-West',
     };
-    return labels[bearing.toUpperCase()] || bearing;
+    return labels[bearing.toUpperCase()] || escapeHtml(bearing);
 }
 
 /**
@@ -82,8 +83,8 @@ function renderDeparture(departure: Departure): string {
 
     return `
         <div class="departure-row">
-            <span class="line-badge">${departure.line}</span>
-            <span class="destination">${departure.destination}</span>
+            <span class="line-badge">${escapeHtml(departure.line)}</span>
+            <span class="destination">${escapeHtml(departure.destination)}</span>
             <span class="time-container">
                 ${occupancyBadge}
                 ${sourceIndicator}
@@ -97,7 +98,9 @@ function renderDeparture(departure: Departure): string {
  * Render a single departure board card
  */
 function renderDepartureCard(board: DepartureBoard): string {
-    const indicator = board.stop.indicator ? ` (${board.stop.indicator})` : '';
+    const stopName = escapeHtml(board.stop.commonName);
+    const atcoCode = escapeHtml(board.stop.atcoCode);
+    const indicator = board.stop.indicator ? ` (${escapeHtml(board.stop.indicator)})` : '';
     const bearingBadge = board.stop.bearing
         ? `<span class="bearing-badge">${getBearingLabel(board.stop.bearing)}</span>`
         : '';
@@ -107,8 +110,8 @@ function renderDepartureCard(board: DepartureBoard): string {
     const favoriteText = isFavorite ? 'Favorited' : 'Favorite';
     const favoriteAriaPressed = isFavorite ? 'true' : 'false';
     const favoriteAriaLabel = isFavorite
-        ? `Remove ${board.stop.commonName} from favorites`
-        : `Add ${board.stop.commonName} to favorites`;
+        ? `Remove ${stopName} from favorites`
+        : `Add ${stopName} to favorites`;
 
     const departuresHtml =
         board.departures.length > 0
@@ -118,15 +121,15 @@ function renderDepartureCard(board: DepartureBoard): string {
     const directionsUrl = getDirectionsUrl(board.stop.coordinates);
 
     return `
-        <div class="card" data-atco-code="${board.stop.atcoCode}">
+        <div class="card" data-atco-code="${atcoCode}">
             <div class="stop-header">
-                <h2>${board.stop.commonName}${indicator}</h2>
+                <h2>${stopName}${indicator}</h2>
                 ${bearingBadge}
             </div>
             <div class="card-meta">
                 <span class="distance">${formatDistance(board.stop.distanceMeters)}</span>
                 <a href="${directionsUrl}" class="directions-link" target="_blank" rel="noopener" aria-label="Get walking directions to this stop">Directions</a>
-                <button class="${favoriteClass}" data-atco-code="${board.stop.atcoCode}" aria-pressed="${favoriteAriaPressed}" aria-label="${favoriteAriaLabel}">${favoriteText}</button>
+                <button class="${favoriteClass}" data-atco-code="${atcoCode}" aria-pressed="${favoriteAriaPressed}" aria-label="${favoriteAriaLabel}">${favoriteText}</button>
             </div>
             <div class="departures-list">${departuresHtml}</div>
         </div>
@@ -153,13 +156,13 @@ function renderTrainDeparture(departure: TrainDeparture): string {
     }
 
     const platformBadge = departure.platform
-        ? `<span class="platform-badge">Plat ${departure.platform}</span>`
+        ? `<span class="platform-badge">Plat ${escapeHtml(departure.platform)}</span>`
         : '';
 
     return `
         <div class="departure-row train-departure-row">
             ${platformBadge}
-            <span class="destination">${departure.destination}</span>
+            <span class="destination">${escapeHtml(departure.destination)}</span>
             <span class="time-container">
                 ${statusBadge}
                 ${sourceIndicator}
@@ -177,7 +180,7 @@ function renderTrainStationCard(board: TrainDepartureBoard, errorMessage?: strin
 
     let departuresHtml: string;
     if (errorMessage) {
-        departuresHtml = `<p class="no-departures error-message">${errorMessage}</p>`;
+        departuresHtml = `<p class="no-departures error-message">${escapeHtml(errorMessage)}</p>`;
     } else if (departures.length > 0) {
         departuresHtml = departures.map(renderTrainDeparture).join('');
     } else {
