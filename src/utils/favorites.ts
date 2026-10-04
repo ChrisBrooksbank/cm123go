@@ -3,6 +3,8 @@
  * Handles localStorage persistence for favorite bus stops and train stations
  */
 
+import { Logger } from '@utils/logger';
+
 const BUS_FAVORITES_KEY = 'cm123go-favorite-stops';
 const TRAIN_FAVORITES_KEY = 'cm123go-favorite-stations';
 
@@ -14,6 +16,18 @@ interface FavoriteStop {
 interface FavoriteStation {
     crsCode: string;
     addedAt: number;
+}
+
+/**
+ * Persist a favourites list; storage can refuse writes (private browsing, full quota),
+ * in which case the change just isn't remembered rather than breaking the page
+ */
+function saveList(key: string, favorites: FavoriteStop[] | FavoriteStation[]): void {
+    try {
+        localStorage.setItem(key, JSON.stringify(favorites));
+    } catch (error) {
+        Logger.warn('Failed to save favourites', error);
+    }
 }
 
 /**
@@ -55,7 +69,7 @@ export const FavoritesManager = {
     add(atcoCode: string): void {
         const favorites = this.getAll().filter(f => f.atcoCode !== atcoCode);
         favorites.push({ atcoCode, addedAt: Date.now() });
-        localStorage.setItem(BUS_FAVORITES_KEY, JSON.stringify(favorites));
+        saveList(BUS_FAVORITES_KEY, favorites);
     },
 
     /**
@@ -63,7 +77,7 @@ export const FavoritesManager = {
      */
     remove(atcoCode: string): void {
         const favorites = this.getAll().filter(f => f.atcoCode !== atcoCode);
-        localStorage.setItem(BUS_FAVORITES_KEY, JSON.stringify(favorites));
+        saveList(BUS_FAVORITES_KEY, favorites);
     },
 
     /**
@@ -116,7 +130,7 @@ export const FavoritesManager = {
     addStation(crsCode: string): void {
         const favorites = this.getAllStations().filter(f => f.crsCode !== crsCode);
         favorites.push({ crsCode, addedAt: Date.now() });
-        localStorage.setItem(TRAIN_FAVORITES_KEY, JSON.stringify(favorites));
+        saveList(TRAIN_FAVORITES_KEY, favorites);
     },
 
     /**
@@ -124,7 +138,7 @@ export const FavoritesManager = {
      */
     removeStation(crsCode: string): void {
         const favorites = this.getAllStations().filter(f => f.crsCode !== crsCode);
-        localStorage.setItem(TRAIN_FAVORITES_KEY, JSON.stringify(favorites));
+        saveList(TRAIN_FAVORITES_KEY, favorites);
     },
 
     /**

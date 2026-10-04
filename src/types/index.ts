@@ -16,7 +16,7 @@ export type Coordinates = z.infer<typeof CoordinatesSchema>;
 /** Location with coordinates and optional metadata */
 export const LocationSchema = z.object({
     coordinates: CoordinatesSchema,
-    accuracy: z.number().positive().optional(),
+    accuracy: z.number().nonnegative().optional(),
     source: z.enum(['gps', 'network', 'postcode', 'manual']),
     timestamp: z.number(),
     postcode: z.string().optional(),

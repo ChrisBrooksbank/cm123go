@@ -94,6 +94,22 @@ describe('GeolocationService', () => {
             }
         });
 
+        it('should accept a fix that reports zero accuracy', async () => {
+            vi.stubGlobal('navigator', {
+                geolocation: {
+                    getCurrentPosition: (success: PositionCallback) => {
+                        success({
+                            coords: { latitude: 51.7356, longitude: 0.4685, accuracy: 0 },
+                        } as GeolocationPosition);
+                    },
+                },
+            });
+
+            const result = await GeolocationService.getLocationFromBrowser();
+
+            expect(result.success).toBe(true);
+        });
+
         it('should classify low accuracy as network source', async () => {
             const mockPosition = {
                 coords: {

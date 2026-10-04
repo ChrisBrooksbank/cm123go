@@ -121,15 +121,17 @@ export async function fetchTrainDepartures(
 
         return departures;
     } catch (error) {
+        // Rethrow so the caller shows "departures unavailable" rather than caching an
+        // empty board that reads as "no trains expected"
         if (error instanceof CircuitOpenError) {
             Logger.warn('Rail Data circuit open, skipping', {
                 crsCode,
                 retryAfter: error.retryAfter,
             });
-            return [];
+        } else {
+            Logger.warn('Failed to fetch train departures', { crsCode, error });
         }
-        Logger.warn('Failed to fetch train departures', { crsCode, error });
-        return [];
+        throw error;
     }
 }
 
