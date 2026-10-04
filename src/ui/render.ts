@@ -200,8 +200,8 @@ function renderTrainStationCard(board: TrainDepartureBoard, errorMessage?: strin
 
     return `
         <div class="card train-station-card" data-crs-code="${station.crsCode}">
-            <svg class="national-rail-logo" viewBox="0 0 100 62" aria-label="National Rail" role="img">
-                <path d="M76 4 L94 17 H30 L70 45 H6 L24 58" fill="none" stroke="#e00" stroke-width="8" stroke-miterlimit="10"/>
+            <svg class="national-rail-logo" viewBox="23.62 263.53 179.5 108.7" aria-label="National Rail" role="img">
+                <path d="m203.1 289.5v16.54h-48.42l-47.24 23.62h95.67v16.54h-95.67l62.6 25.98h-42.52l-55.51-25.98h-48.42v-16.54h48.42l47.24-23.62h-95.67v-16.54h95.67l-62.6-25.98h42.52l55.51 25.98z" fill="#e21836"/>
             </svg>
             <div class="stop-header">
                 <h2>${station.name}</h2>
