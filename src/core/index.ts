@@ -14,3 +14,6 @@ export { TrainStationService, TrainDepartureService } from './train-stations';
 
 // Application state management (only export what's needed externally)
 export { type DisplayItem, setUserLocation, initializeState } from './app-state';
+
+// Service area (Chelmsford only)
+export { isWithinChelmsfordArea, OUTSIDE_AREA_MESSAGE } from './service-area';

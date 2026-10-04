@@ -10,6 +10,7 @@ import { Logger } from '@utils/logger';
 import { resilientFetch, CircuitOpenError } from '@utils/helpers';
 import { fetchWithTimeout } from '@utils/fetch-timeout';
 import { getConfig } from '@config/index';
+import { calculateMinutesUntil as calculateMinutesUntilTime } from '@utils/time';
 import type { TrainDeparture } from '@/types';
 
 /** Huxley2 API response types */
@@ -172,24 +173,11 @@ function calculateMinutesUntil(timeStr: string): number {
         return 0;
     }
 
-    const timeMatch = timeStr.match(/^(\d{1,2}):(\d{2})$/);
-    if (!timeMatch) {
+    if (!/^\d{1,2}:\d{2}$/.test(timeStr)) {
         return 0;
     }
 
-    const now = new Date();
-    const [hours, minutes] = [parseInt(timeMatch[1], 10), parseInt(timeMatch[2], 10)];
-
-    const departureDate = new Date();
-    departureDate.setHours(hours, minutes, 0, 0);
-
-    // If the time is earlier than now, assume it's tomorrow
-    if (departureDate < now) {
-        departureDate.setDate(departureDate.getDate() + 1);
-    }
-
-    const diffMs = departureDate.getTime() - now.getTime();
-    const mins = Math.max(0, Math.round(diffMs / 60000));
+    const mins = calculateMinutesUntilTime(timeStr);
 
     // Sanity check: departure boards don't show trains 3+ hours away
     // If we calculate > 180 min, it's likely a date calculation error

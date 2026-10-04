@@ -12,6 +12,8 @@ import {
     GeolocationService,
     setUserLocation,
     deduplicateBySharedLines,
+    isWithinChelmsfordArea,
+    OUTSIDE_AREA_MESSAGE,
 } from '@/core';
 import { FavoritesManager } from '@/utils/favorites';
 import { reverseGeocodeToPostcode } from '@/api';
@@ -38,6 +40,8 @@ import {
     showLoadingDepartures,
     SHOW_MORE_LABEL,
     SHOW_MORE_BUSY_LABEL,
+    FAVORITE_ICON,
+    FAVORITED_ICON,
 } from './render';
 import { triggerHapticFeedback } from '@/utils/settings';
 
@@ -110,12 +114,13 @@ function handleFavoriteClick(e: Event): void {
 
     // Update button appearance and ARIA attributes immediately
     btn.classList.toggle('active', isNowFavorite);
-    btn.textContent = isNowFavorite ? 'Favorited' : 'Favorite';
+    btn.textContent = isNowFavorite ? FAVORITED_ICON : FAVORITE_ICON;
     btn.setAttribute('aria-pressed', isNowFavorite ? 'true' : 'false');
-    btn.setAttribute(
-        'aria-label',
-        isNowFavorite ? `Remove ${name} from favorites` : `Add ${name} to favorites`
-    );
+    const favoriteLabel = isNowFavorite
+        ? `Remove ${name} from favorites`
+        : `Add ${name} to favorites`;
+    btn.setAttribute('aria-label', favoriteLabel);
+    btn.setAttribute('title', favoriteLabel);
 
     // Announce state change to screen readers
     announceStatus(isNowFavorite ? `${name} added to favorites` : `${name} removed from favorites`);
@@ -275,6 +280,7 @@ export async function handleRefresh(): Promise<void> {
     }
     announceStatus('Updating departure times');
 
+    let refreshed = false;
     try {
         // Get train stations first so we can reference them for error cases
         const trainStations = TrainStationService.getStationsByDistance(userLocation);
@@ -351,6 +357,9 @@ export async function handleRefresh(): Promise<void> {
                 displayError(busResult.error.getUserMessage());
             }
         }
+        refreshed = true;
+    } catch (error) {
+        Logger.error('Failed to refresh departures', String(error));
     } finally {
         if (refreshBtn instanceof HTMLButtonElement) {
             refreshBtn.disabled = false;
@@ -360,7 +369,7 @@ export async function handleRefresh(): Promise<void> {
         if (container) {
             container.setAttribute('aria-busy', 'false');
         }
-        announceStatus('Times updated');
+        announceStatus(refreshed ? 'Times updated' : 'Failed to update times');
     }
 }
 
@@ -422,6 +431,26 @@ async function handleLocationUpdate(): Promise<void> {
                 true
             );
             // Restore previous display after 3 seconds
+            setTimeout(() => {
+                const savedLocation = getSavedLocation();
+                if (savedLocation?.postcode) {
+                    updatePostcodeDisplay(
+                        `<span class="status">${savedLocation.postcode}</span>`,
+                        true
+                    );
+                }
+            }, 3000);
+            return;
+        }
+
+        // Don't switch to a location the app has no stops for - say so instead
+        if (!isWithinChelmsfordArea(result.location.coordinates)) {
+            Logger.info('Updated location is outside Chelmsford, keeping current location');
+            announceStatus(OUTSIDE_AREA_MESSAGE);
+            updatePostcodeDisplay(
+                '<span class="status" style="background: var(--color-error-bg); color: var(--color-error);">Outside Chelmsford</span>',
+                true
+            );
             setTimeout(() => {
                 const savedLocation = getSavedLocation();
                 if (savedLocation?.postcode) {
