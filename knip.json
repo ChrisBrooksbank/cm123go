@@ -1,5 +1,5 @@
 {
-    "entry": ["src/main.ts", "src/**/*.test.ts"],
+    "entry": ["src/**/*.test.ts"],
     "project": ["src/**/*.ts"],
     "paths": {
         "@/*": ["src/*"],
@@ -9,5 +9,6 @@
         "@config/*": ["src/config/*"],
         "@types/*": ["src/types/*"]
     },
-    "ignoreDependencies": ["sharp"]
+    "ignoreDependencies": ["sharp"],
+    "ignoreBinaries": ["ffmpeg"]
 }
