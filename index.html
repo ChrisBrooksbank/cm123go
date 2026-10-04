@@ -284,7 +284,7 @@
                 font-size: 1.05rem;
                 line-height: 1.3;
                 color: var(--color-text-strong);
-                overflow-wrap: anywhere;
+                overflow-wrap: break-word;
             }
             .time-container {
                 display: flex;
@@ -1114,16 +1114,62 @@
             html.text-size-xl header h1 {
                 font-size: 1.1rem;
             }
-            html.text-size-xl .departure-row {
-                flex-wrap: wrap;
-                gap: 0.5rem;
+            /* Large text: route and time on the first line, destination on its own
+               full-width line below, so place names never break mid-word */
+            html.text-size-large .departure-row:not(.train-departure-row),
+            html.text-size-xl .departure-row:not(.train-departure-row) {
+                display: grid;
+                grid-template-columns: auto minmax(0, 1fr) auto;
+                grid-template-areas:
+                    'badge . time'
+                    'dest dest status'
+                    'occupancy occupancy occupancy';
+                align-items: center;
+                column-gap: 0.5rem;
+                row-gap: 0.35rem;
             }
-            html.text-size-xl .destination {
+            html.text-size-large .departure-row:not(.train-departure-row) .line-badge,
+            html.text-size-xl .departure-row:not(.train-departure-row) .line-badge {
+                grid-area: badge;
+                justify-self: start;
+            }
+            html.text-size-large .departure-row:not(.train-departure-row) .destination,
+            html.text-size-xl .departure-row:not(.train-departure-row) .destination {
+                grid-area: dest;
+                margin: 0;
+            }
+            html.text-size-large .departure-row:not(.train-departure-row) .time-container,
+            html.text-size-xl .departure-row:not(.train-departure-row) .time-container {
+                display: contents;
+            }
+            html.text-size-large .departure-row:not(.train-departure-row) .time,
+            html.text-size-xl .departure-row:not(.train-departure-row) .time {
+                grid-area: time;
+            }
+            html.text-size-large .departure-row:not(.train-departure-row) .source-badge,
+            html.text-size-xl .departure-row:not(.train-departure-row) .source-badge {
+                grid-area: status;
+                justify-self: end;
+            }
+            html.text-size-large .departure-row:not(.train-departure-row) .occupancy-badge,
+            html.text-size-xl .departure-row:not(.train-departure-row) .occupancy-badge {
+                grid-area: occupancy;
+                justify-self: start;
+            }
+            /* Trains: destination on its own line above platform and time */
+            html.text-size-large .train-departure-row,
+            html.text-size-xl .train-departure-row {
+                flex-wrap: wrap;
+                row-gap: 0.35rem;
+            }
+            html.text-size-large .train-departure-row .destination,
+            html.text-size-xl .train-departure-row .destination {
                 flex-basis: 100%;
-                margin-left: 0;
+                margin: 0;
                 order: -1;
             }
-            html.text-size-xl .time-container {
+            html.text-size-large .train-departure-row .time-container,
+            html.text-size-xl .train-departure-row .time-container {
                 margin-left: auto;
             }
 
@@ -1139,13 +1185,11 @@
             }
             html.text-size-large .directions-link,
             html.text-size-xl .directions-link {
-                font-size: 14px;
-                padding: 8px 12px;
+                font-size: 0.9rem;
             }
             html.text-size-large .favorite-btn,
             html.text-size-xl .favorite-btn {
-                font-size: 14px;
-                padding: 8px 12px;
+                font-size: 1.1rem;
             }
 
             /* Help modal fixes for large text */
