@@ -186,8 +186,13 @@ async function main() {
     await page.waitForTimeout(1800);
     await page.screenshot({ path: join(SCREENSHOT_DIR, 'filtered.png') });
 
-    // Dark mode
+    // Display settings: switch on dark mode
+    await page.click('#display-btn');
+    await page.waitForTimeout(1000);
+    await page.screenshot({ path: join(SCREENSHOT_DIR, 'display-settings.png') });
     await page.click('#theme-btn');
+    await page.waitForTimeout(1000);
+    await page.click('#display-close');
     await page.waitForTimeout(1500);
     await page.screenshot({ path: join(SCREENSHOT_DIR, 'dark-mode.png') });
 

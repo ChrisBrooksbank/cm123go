@@ -148,6 +148,13 @@
             header h1 {
                 font-size: 1.5rem;
                 font-weight: 600;
+                margin: 0;
+                line-height: 1.2;
+            }
+            .tagline {
+                margin: 0;
+                font-size: 0.875rem;
+                opacity: 0.9;
             }
             main {
                 flex: 1;
@@ -689,34 +696,11 @@
                 flex-wrap: wrap;
                 gap: 0.5rem;
             }
-            .text-size-toggle {
-                display: flex;
-                gap: 0.25rem;
-            }
-            .text-size-btn {
-                min-width: 36px;
-                min-height: 36px;
-                padding: 0.25rem 0.5rem;
-                background: rgba(255, 255, 255, 0.2);
-                color: white;
-                border: 1px solid rgba(255, 255, 255, 0.3);
-                border-radius: var(--radius-sm);
-                font-weight: 600;
-                cursor: pointer;
-                transition: all 0.15s ease;
-            }
-            .text-size-btn:hover {
-                background: rgba(255, 255, 255, 0.3);
-            }
-            .text-size-btn.active {
-                background: var(--color-accent);
-                border-color: var(--color-accent);
-                color: var(--color-text-strong);
-            }
             .settings-btn {
-                min-width: 36px;
-                min-height: 36px;
-                padding: 0.25rem 0.5rem;
+                min-width: 44px;
+                min-height: 44px;
+                padding: 0.25rem 0.75rem;
+                font-size: 1rem;
                 background: rgba(255, 255, 255, 0.2);
                 color: white;
                 border: 1px solid rgba(255, 255, 255, 0.3);
@@ -732,6 +716,76 @@
                 background: var(--color-accent);
                 border-color: var(--color-accent);
                 color: var(--color-text-strong);
+            }
+
+            /* Display settings panel */
+            .display-setting {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+                margin-bottom: 1.25rem;
+            }
+            .display-setting-label {
+                margin: 0;
+                font-weight: 600;
+                color: var(--color-text-strong);
+            }
+            .text-size-toggle {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 0.5rem;
+            }
+            .text-size-btn,
+            .display-toggle {
+                min-height: 48px;
+                border: 1px solid var(--color-border-strong);
+                border-radius: var(--radius-md);
+                background: transparent;
+                color: var(--color-text-strong);
+                font: inherit;
+                cursor: pointer;
+            }
+            .text-size-btn {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-end;
+                gap: 0.25rem;
+                padding: 0.5rem 0.25rem;
+                font-size: 0.875rem;
+                font-weight: 500;
+            }
+            .text-size-sample {
+                font-weight: 700;
+                line-height: 1;
+            }
+            .text-size-btn.active,
+            .display-toggle.active {
+                background: var(--color-favorite-bg);
+                border-color: var(--color-favorite);
+                border-width: 2px;
+            }
+            .display-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 0.75rem;
+                padding: 0.5rem 0.75rem;
+                text-align: left;
+            }
+            .display-toggle::after {
+                content: 'Off';
+                padding: 0.15rem 0.6rem;
+                border-radius: 999px;
+                background: var(--color-border);
+                color: var(--color-text-muted);
+                font-size: 0.875rem;
+                font-weight: 600;
+            }
+            .display-toggle[aria-pressed='true']::after {
+                content: 'On';
+                background: var(--color-favorite);
+                color: #ffffff;
             }
 
             /* High contrast mode */
@@ -851,16 +905,13 @@
                 background: #1a1f23;
                 border-bottom: 1px solid var(--color-border);
             }
-            body.dark-mode .text-size-btn,
             body.dark-mode .settings-btn {
                 background: rgba(255, 255, 255, 0.1);
                 border-color: rgba(255, 255, 255, 0.2);
             }
-            body.dark-mode .text-size-btn:hover,
             body.dark-mode .settings-btn:hover {
                 background: rgba(255, 255, 255, 0.15);
             }
-            body.dark-mode .text-size-btn.active,
             body.dark-mode .settings-btn.active {
                 background: var(--color-accent);
                 border-color: var(--color-accent);
@@ -1051,15 +1102,6 @@
                 flex-wrap: wrap;
                 gap: 0.5rem;
             }
-            html.text-size-large .text-size-btn,
-            html.text-size-xl .text-size-btn,
-            html.text-size-large .settings-btn,
-            html.text-size-xl .settings-btn {
-                font-size: 14px;
-                padding: 6px 10px;
-                min-width: 40px;
-                min-height: 40px;
-            }
             html.text-size-large main,
             html.text-size-xl main {
                 padding: 1rem;
@@ -1158,52 +1200,11 @@
         </script>
         <a href="#departures-container" class="skip-link">Skip to departures</a>
         <header>
-            <h1>CM123Go</h1>
+            <div class="brand">
+                <h1>CM123Go</h1>
+                <p class="tagline">Buses and trains near you</p>
+            </div>
             <div class="header-controls">
-                <div class="text-size-toggle" role="group" aria-label="Text size">
-                    <button
-                        class="text-size-btn active"
-                        data-size="normal"
-                        aria-label="Normal text size"
-                        aria-pressed="true"
-                    >
-                        A
-                    </button>
-                    <button
-                        class="text-size-btn"
-                        data-size="large"
-                        aria-label="Large text size"
-                        aria-pressed="false"
-                    >
-                        A+
-                    </button>
-                    <button
-                        class="text-size-btn"
-                        data-size="xl"
-                        aria-label="Extra large text size"
-                        aria-pressed="false"
-                    >
-                        A++
-                    </button>
-                </div>
-                <button
-                    id="contrast-btn"
-                    class="settings-btn"
-                    aria-label="Toggle high contrast mode"
-                    aria-pressed="false"
-                    title="High contrast"
-                >
-                    HC
-                </button>
-                <button
-                    id="theme-btn"
-                    class="settings-btn"
-                    aria-label="Toggle dark mode"
-                    aria-pressed="false"
-                    title="Dark mode"
-                >
-                    <span id="theme-icon">&#9790;</span>
-                </button>
                 <button
                     id="route-filter-btn"
                     class="settings-btn"
@@ -1212,6 +1213,15 @@
                     title="Filter routes"
                 >
                     Filter
+                </button>
+                <button
+                    id="display-btn"
+                    class="settings-btn"
+                    aria-label="Display settings: text size, contrast and dark mode"
+                    aria-haspopup="dialog"
+                    title="Display settings"
+                >
+                    Aa
                 </button>
                 <button
                     id="help-btn"
@@ -1380,7 +1390,7 @@
                         you
                     </li>
                     <li>
-                        <strong>Save favourites:</strong> Tap "Favourite" on any stop to save it for
+                        <strong>Save favourites:</strong> Tap the ☆ star on any stop to save it for
                         quick access
                     </li>
                     <li>
@@ -1391,14 +1401,83 @@
                         <strong>Update location:</strong> Tap the location icon to re-detect where
                         you are, or "Change" to enter a different postcode
                     </li>
-                    <li><strong>Text size:</strong> Use A, A+, A++ buttons to make text bigger</li>
-                    <li><strong>High contrast:</strong> Tap "HC" for easier-to-read colours</li>
+                    <li>
+                        <strong>Filter routes:</strong> Tap "Filter" to show only the bus routes you
+                        use
+                    </li>
+                    <li>
+                        <strong>Bigger text, contrast and dark mode:</strong> Tap "Aa" at the top
+                    </li>
                 </ul>
                 <button id="help-close" class="help-modal-close">Got it</button>
             </div>
         </div>
 
         <!-- Route Filter Modal -->
+        <div
+            id="display-modal"
+            class="help-modal-overlay"
+            hidden
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="display-title"
+        >
+            <div class="help-modal">
+                <h2 id="display-title">Display settings</h2>
+                <div class="display-setting">
+                    <p id="text-size-label" class="display-setting-label">Text size</p>
+                    <div class="text-size-toggle" role="group" aria-labelledby="text-size-label">
+                        <button
+                            class="text-size-btn active"
+                            data-size="normal"
+                            aria-label="Normal text size"
+                            aria-pressed="true"
+                        >
+                            <span class="text-size-sample" style="font-size: 1rem">A</span>
+                            Normal
+                        </button>
+                        <button
+                            class="text-size-btn"
+                            data-size="large"
+                            aria-label="Large text size"
+                            aria-pressed="false"
+                        >
+                            <span class="text-size-sample" style="font-size: 1.25rem">A</span>
+                            Large
+                        </button>
+                        <button
+                            class="text-size-btn"
+                            data-size="xl"
+                            aria-label="Extra large text size"
+                            aria-pressed="false"
+                        >
+                            <span class="text-size-sample" style="font-size: 1.5rem">A</span>
+                            Extra large
+                        </button>
+                    </div>
+                </div>
+                <div class="display-setting">
+                    <button
+                        id="contrast-btn"
+                        class="display-toggle"
+                        aria-label="High contrast colours"
+                        aria-pressed="false"
+                    >
+                        High contrast colours
+                    </button>
+                    <button
+                        id="theme-btn"
+                        class="display-toggle"
+                        aria-label="Dark mode"
+                        aria-pressed="false"
+                    >
+                        Dark mode
+                    </button>
+                </div>
+                <button id="display-close" class="help-modal-close">Done</button>
+            </div>
+        </div>
+
         <div
             id="route-filter-modal"
             class="help-modal-overlay"

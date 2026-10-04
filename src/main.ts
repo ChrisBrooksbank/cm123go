@@ -52,6 +52,7 @@ import {
     type TextSize,
 } from '@/utils/settings';
 import { setupHelpHandlers, showHelpIfFirstVisit } from '@/ui/help';
+import { setupDisplaySettingsHandlers } from '@/ui/display-settings';
 import { initializeRouteFilter } from '@/ui/route-filter';
 
 // PWA install prompt
@@ -341,17 +342,12 @@ function setupContrastButton(): void {
  */
 function setupThemeButton(): void {
     const btn = document.getElementById('theme-btn');
-    const icon = document.getElementById('theme-icon');
-    if (!btn || !icon) return;
+    if (!btn) return;
 
     const updateButtonState = () => {
         const dark = isDarkMode();
         btn.classList.toggle('active', dark);
         btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
-        // Sun icon when dark (to switch to light), moon when light (to switch to dark)
-        icon.innerHTML = dark ? '&#9788;' : '&#9790;';
-        btn.setAttribute('title', dark ? 'Switch to light mode' : 'Switch to dark mode');
-        btn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
     };
 
     updateButtonState();
@@ -410,6 +406,7 @@ async function init(): Promise<void> {
             setupContrastButton();
             setupThemeButton();
             setupHelpHandlers();
+            setupDisplaySettingsHandlers();
             initializeRouteFilter();
         } catch (settingsError) {
             Logger.warn('Settings initialization failed, continuing', settingsError);
