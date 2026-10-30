@@ -1,5 +1,7 @@
 # cm123go
 
+**Live demo:** [cm123go.netlify.app](https://cm123go.netlify.app)
+
 Live bus and train departures for Chelmsford, UK, on your phone. Open it and it shows the buses
 and trains leaving near you - no app store or account needed.
 
