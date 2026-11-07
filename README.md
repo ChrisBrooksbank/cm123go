@@ -1,5 +1,9 @@
 # cm123go
 
+<!-- hub-link -->
+> Part of [Chris's app hub](https://chrisbrooksbank-hub.netlify.app) - a directory of all my deployed apps.
+<!-- /hub-link -->
+
 **Live demo:** [cm123go.netlify.app](https://cm123go.netlify.app)
 
 Live bus and train departures for Chelmsford, UK, on your phone. Open it and it shows the buses
