@@ -3289,8 +3289,8 @@
     },
     {
         "atcoCode": "15003407305",
-        "commonName": "Rose & Crown",
-        "indicator": "opp",
+        "commonName": "Primrose Hill",
+        "indicator": "adj",
         "bearing": "W",
         "coordinates": {
             "latitude": 51.739363,
@@ -3661,8 +3661,8 @@
     },
     {
         "atcoCode": "15003408101",
-        "commonName": "Rose & Crown",
-        "indicator": "o/s",
+        "commonName": "Primrose Hill",
+        "indicator": "opp",
         "bearing": "E",
         "coordinates": {
             "latitude": 51.7394721,
